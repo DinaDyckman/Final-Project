@@ -6,11 +6,11 @@ export interface User {
 }
 
 export interface Product {
-  id: string
+  _id: string
   name: string
-  description: string
-  price: number
-  available: boolean
+  category: string
+  quantityAvailable: number
+  imageUrl?: string
 }
 
 export interface Rental {

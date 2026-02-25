@@ -32,5 +32,14 @@ export const aiService = {
             console.error("Final Debug:", error.message);
             throw new Error("Failed to get advice");
         }
+    },
+    getUserHistory: async (userId: string) => {
+        try {
+            const history = await AiMode.find({ userId });
+            return history;
+        } catch (error: any) {
+            console.error("Error fetching user history:", error.message);
+            throw new Error("Failed to get user history");
+        }
     }
 };
