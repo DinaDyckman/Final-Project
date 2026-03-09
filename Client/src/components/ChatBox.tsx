@@ -40,8 +40,7 @@ function ChatBox() {
 
       const data = await response.json()
       
-      // השרת מחזיר אובייקט, אנחנו צריכים את הטקסט מתוך שדה advice (או response)
-      const aiText = data.advice || data.response || "I'm not sure how to answer that.";
+      const aiText = data.aiResponse || "I'm not sure how to answer that.";
       
       setMessages(prev => [...prev, { text: aiText, isUser: false }])
     } catch (error) {
