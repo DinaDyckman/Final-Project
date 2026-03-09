@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import '../styles/ChatBox.css'
 
 interface Message {
@@ -11,6 +11,15 @@ function ChatBox() {
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
+  const messagesEndRef = useRef<HTMLDivElement>(null)
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+
+  useEffect(() => {
+    scrollToBottom()
+  }, [messages])
 
   const sendMessage = async () => {
     if (!input.trim()) return
@@ -75,6 +84,7 @@ function ChatBox() {
               </div>
             ))}
             {loading && <div className="message ai">Thinking... 🪄</div>}
+            <div ref={messagesEndRef} />
           </div>
           <div className="chat-input">
             <input
