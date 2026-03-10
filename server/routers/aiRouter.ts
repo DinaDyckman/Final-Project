@@ -37,7 +37,7 @@ router.post('/consult', async (req: Request, res: Response) => {
  */
 router.get('/history/:userId', async (req: Request, res: Response) => {
     try {
-        const { userId } = req.params;
+        const userId = Array.isArray(req.params.userId) ? req.params.userId[0] : req.params.userId;
         const history = await aiService.getUserHistory(userId);
         res.status(200).json(history);
     } catch (error: any) {

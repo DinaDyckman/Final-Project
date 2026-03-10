@@ -3,6 +3,7 @@ import dotenv from 'dotenv';
 import cors from 'cors'; // ספרייה שמאפשרת ל-React לדבר עם השרת
 import connectDB from './config/dbConfig';
 import aiRouter from './routers/aiRouter';
+import productRouter from './routers/productRouter';
 
 // 1. טעינת משתני הסביבה (חייב להיות בהתחלה!)
 dotenv.config();
@@ -20,6 +21,7 @@ app.use(express.json()); // מאפשר לשרת לקבל נתונים בפורמ
 // 5. הגדרת הנתיבים (Routes)
 // כל מה שקשור ל-AI יתחיל בכתובת /api/ai
 app.use('/api/ai', aiRouter);
+app.use('/api/products', productRouter);
 
 // 6. בדיקת בריאות לשרת (אופציונלי - כדי לראות שהכל עובד)
 app.get('/', (req, res) => {
@@ -27,7 +29,7 @@ app.get('/', (req, res) => {
 });
 
 // 7. הפעלת השרת
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server is up and running on port ${PORT} 🎈`);
 });

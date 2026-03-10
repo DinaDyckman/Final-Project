@@ -60,5 +60,14 @@ export const aiService = {
                 suggestedColor: "Emergency-Fallback"
             });
         }
+    },
+    getUserHistory: async (userId: string) => {
+        try {
+            const history = await AiMode.find({ userId });
+            return history;
+        } catch (error: any) {
+            console.error("Error fetching user history:", error.message);
+            throw new Error("Failed to get user history");
+        }
     }
 };

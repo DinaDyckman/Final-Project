@@ -1,11 +1,9 @@
 import { useState, useEffect } from 'react'
 import { productService } from '../services/productService'
 import { Product } from '../types'
-import { useLanguage } from '../context/LanguageContext'
 
 function Products() {
   const [products, setProducts] = useState<Product[]>([])
-  const { t } = useLanguage()
 
   useEffect(() => {
     productService.getAll()
@@ -14,16 +12,15 @@ function Products() {
   }, [])
 
   return (
-    <div className="container">
-      <h1 style={{textAlign: 'center', margin: '60px 0 20px', fontWeight: 300, fontSize: '2.5rem', letterSpacing: '2px'}}>{t('ourCollection')}</h1>
-      <p style={{textAlign: 'center', marginBottom: '50px', color: '#666'}}>{t('browsePremium')}</p>
-      <div className="grid">
+    <div style={{padding: '20px'}}>
+      <h1>Available Items</h1>
+      <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '20px', marginTop: '20px'}}>
         {products.map(product => (
-          <div key={product.id} className="card">
+          <div key={product._id} style={{border: '1px solid #ddd', padding: '15px', borderRadius: '8px'}}>
+            {product.imageUrl && <img src={product.imageUrl} alt={product.name} style={{width: '100%', height: '150px', objectFit: 'cover', borderRadius: '4px', marginBottom: '10px'}} />}
             <h3>{product.name}</h3>
-            <p style={{color: '#666', margin: '15px 0', minHeight: '60px'}}>{product.description}</p>
-            <p style={{fontSize: '1.8rem', fontWeight: 300, color: '#000', marginBottom: '20px'}}>${product.price}<span style={{fontSize: '0.9rem', color: '#666'}}>{t('perDay')}</span></p>
-            <button style={{width: '100%'}}>{t('reserveNow')}</button>
+            <p>Category: {product.category}</p>
+            <p>Available: {product.quantityAvailable}</p>
           </div>
         ))}
       </div>
