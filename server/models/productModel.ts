@@ -16,7 +16,8 @@ const ProductSchema = new Schema<IProduct>(
   },
   {
     timestamps: true,
-    versionKey: false
+    versionKey: false,
+    strict: false
   }
 );
 

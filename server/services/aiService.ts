@@ -1,5 +1,8 @@
 import axios from "axios";
+import https from "https";
 import AiMode from "../models/aiModes";
+
+const httpsAgent = new https.Agent({ rejectUnauthorized: false });
 
 export const aiService = {
     generateAdvice: async (userId: string, userQuery: string) => {
@@ -7,7 +10,7 @@ export const aiService = {
         const validObjectId = userId.length === 24 ? userId : "65a12345678901234567890a";
         
         // משיכת המפתח מה-env
-        const apiKey = (process.env.GROQ_API_KEY || "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").trim();
+        const apiKey = (process.env.GROQ_API_KEY || "").trim();
 
         try {
             console.log("🚀 Connecting to Groq Expert (Event-Only Mode)...");
@@ -34,7 +37,8 @@ export const aiService = {
                 headers: {
                     'Authorization': `Bearer ${apiKey}`,
                     'Content-Type': 'application/json'
-                }
+                },
+                httpsAgent
             });
 
             const aiResponse = response.data.choices[0].message.content;
