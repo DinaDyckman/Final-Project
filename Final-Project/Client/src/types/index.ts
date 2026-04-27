@@ -13,6 +13,11 @@ export interface Product {
   imageUrl?: string
 }
 
+export interface CartItem {
+  product: Product
+  quantity: number
+}
+
 export interface Rental {
   id: string
   productId: string
