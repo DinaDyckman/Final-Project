@@ -6,7 +6,7 @@ dotenv.config();
 const connectDB = async (): Promise<void> => {
     try {
         //const mongoURI = process.env.MONGODB_URI || 'mongodb://localhost:27017/eventInventory';
-        const mongoURI = process.env.MONGODB_URI || 'mongodb+srv://numi-dina:7nmyCER4P8zq.pq@project.j8malzx.mongodb.net/?appName=project';
+        const mongoURI = process.env.MONGODB_URI || 'mongodb+srv://numi-dina:7nmyCER4P8zq.pq@project.j8malzx.mongodb.net/productseventInventory?appName=project';
         await mongoose.connect(mongoURI);
         
         console.log('MongoDB Connected Successfully! 🚀');
