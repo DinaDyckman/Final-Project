@@ -6,7 +6,7 @@ interface Message {
   isUser: boolean
 }
 
-function ChatBox() {
+function ChatBox({ cartOpen }: { cartOpen: boolean }) {
   const [isOpen, setIsOpen] = useState(false)
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
@@ -62,7 +62,7 @@ function ChatBox() {
 
   return (
     <>
-      {!isOpen && (
+      {!isOpen && !cartOpen && (
         <button className="help-button" onClick={() => setIsOpen(true)}>
           💬 Need Help?
         </button>

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { productService } from '../services/productService'
 import { Product, CartItem } from '../types'
 
@@ -10,12 +11,37 @@ const CATEGORY_GROUPS: Record<string, string[]> = {
   'Other': ['Tents', 'Generators', 'Portable Restrooms', 'Dance Floors'],
 }
 
-function Products() {
+function Products({ cartOpen, setCartOpen }: { cartOpen: boolean, setCartOpen: (open: boolean) => void }) {
   const [products, setProducts] = useState<Product[]>([])
   const [selectedCategories, setSelectedCategories] = useState<string[]>([])
   const [cart, setCart] = useState<CartItem[]>([])
   const [quantities, setQuantities] = useState<Record<string, number>>({})
-  const [cartOpen, setCartOpen] = useState(false)
+  const navigate = useNavigate()
+  const [checkoutOpen, setCheckoutOpen] = useState(false)
+  const [startDate, setStartDate] = useState('')
+  const [endDate, setEndDate] = useState('')
+
+  const checkout = async () => {
+    if (!startDate || !endDate) return alert('Please select both dates.')
+    if (endDate <= startDate) return alert('End date must be after start date.')
+    const userId = localStorage.getItem('userId') || 'user_123'
+    const items = cart.map(i => ({ productId: i.product._id, quantity: i.quantity }))
+    try {
+      const res = await fetch('/api/rentals/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, items, startDate, endDate })
+      })
+      if (!res.ok) throw new Error('Checkout failed')
+      const data = await res.json()
+      setCart([])
+      setCartOpen(false)
+      setCheckoutOpen(false)
+      navigate('/thank-you', { state: { totalPrice: data.rental.totalPrice } })
+    } catch (error) {
+      alert('Checkout failed, please try again.')
+    }
+  }
 
   useEffect(() => {
     productService.getAll().then(setProducts).catch(console.error)
@@ -158,11 +184,28 @@ function Products() {
           </div>
           {cart.length > 0 && (
             <div style={{ padding: '20px', borderTop: '1px solid #e8e8e8' }}>
-              <button style={{ width: '100%', padding: '14px', background: '#5c1a33', color: 'white', fontSize: '14px', letterSpacing: '1px' }}>
+              <button onClick={() => setCheckoutOpen(true)} style={{ width: '100%', padding: '14px', background: '#5c1a33', color: 'white', fontSize: '14px', letterSpacing: '1px' }}>
                 Proceed to Checkout
               </button>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Date Picker Popup */}
+      {checkoutOpen && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 300, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ background: 'white', padding: '40px', width: '380px', border: '1px solid #e8e8e8', boxShadow: '0 10px 40px rgba(92,26,51,0.2)' }}>
+            <h2 style={{ fontWeight: 300, fontSize: '1.5rem', color: '#5c1a33', letterSpacing: '2px', marginBottom: '30px' }}>Select Dates</h2>
+            <label style={{ fontSize: '12px', color: '#999', letterSpacing: '1px', textTransform: 'uppercase' }}>Start Date</label>
+            <input type="date" value={startDate} min={new Date().toISOString().split('T')[0]} onChange={e => setStartDate(e.target.value)} style={{ width: '100%', marginTop: '6px', marginBottom: '20px' }} />
+            <label style={{ fontSize: '12px', color: '#999', letterSpacing: '1px', textTransform: 'uppercase' }}>End Date</label>
+            <input type="date" value={endDate} min={startDate || new Date().toISOString().split('T')[0]} onChange={e => setEndDate(e.target.value)} style={{ width: '100%', marginTop: '6px', marginBottom: '30px' }} />
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button onClick={() => setCheckoutOpen(false)} style={{ flex: 1, padding: '12px', background: 'transparent', color: '#5c1a33', border: '1px solid #5c1a33', fontSize: '13px', letterSpacing: '1px' }}>Cancel</button>
+              <button onClick={checkout} style={{ flex: 1, padding: '12px', background: '#5c1a33', color: 'white', fontSize: '13px', letterSpacing: '1px' }}>Confirm</button>
+            </div>
+          </div>
         </div>
       )}
     </div>

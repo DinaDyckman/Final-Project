@@ -5,106 +5,59 @@ import { Product } from './models/productModel';
 dotenv.config();
 
 const products = [
-  // Tables
-  { name: 'Round Banquet Table (60")', category: 'Tables', quantityAvailable: 50, imageUrl: 'https://images.unsplash.com/photo-1519167758481-83f550bb49b3?w=400' },
-  { name: 'Rectangular Folding Table (8ft)', category: 'Tables', quantityAvailable: 40, imageUrl: 'https://images.unsplash.com/photo-1530103862676-de8c9debad1d?w=400' },
-  { name: 'Cocktail High Table', category: 'Tables', quantityAvailable: 30, imageUrl: 'https://images.unsplash.com/photo-1464366400600-7168b8af9bc3?w=400' },
-  { name: 'Sweetheart Table', category: 'Tables', quantityAvailable: 10, imageUrl: 'https://images.unsplash.com/photo-1478146059778-26028b07395a?w=400' },
-  { name: 'Kids Activity Table', category: 'Tables', quantityAvailable: 20, imageUrl: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400' },
-  { name: 'Serpentine Table', category: 'Tables', quantityAvailable: 15, imageUrl: 'https://images.unsplash.com/photo-1530103862676-de8c9debad1d?w=400' },
+  // Event Furniture
+  { name: 'Round Banquet Table', category: 'Tables', quantityAvailable: 20, imageUrl: 'https://images.unsplash.com/photo-1519167758481-83f550bb49b3?auto=format&fit=crop&w=400&q=80' },
+  { name: 'Rectangular Folding Table', category: 'Tables', quantityAvailable: 30, imageUrl: 'https://images.unsplash.com/photo-1530018607912-eff2daa1bac4?auto=format&fit=crop&w=400&q=80' },
+  { name: 'Cocktail Table', category: 'Tables', quantityAvailable: 15, imageUrl: 'https://images.unsplash.com/photo-1464366400600-7168b8af9bc3?auto=format&fit=crop&w=400&q=80' },
+  { name: 'Chiavari Chair', category: 'Chairs', quantityAvailable: 200, imageUrl: 'https://images.unsplash.com/photo-1561677978-583a8c7a4b43?auto=format&fit=crop&w=400&q=80' },
+  { name: 'Folding Chair', category: 'Chairs', quantityAvailable: 300, imageUrl: 'https://images.unsplash.com/photo-1506439773649-6e0eb8cfb237?auto=format&fit=crop&w=400&q=80' },
+  { name: 'Throne Chair', category: 'Chairs', quantityAvailable: 2, imageUrl: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&w=400&q=80' },
+  { name: 'Lounge Sofa', category: 'Sofas', quantityAvailable: 8, imageUrl: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&w=400&q=80' },
+  { name: 'Ottoman', category: 'Lounge Furniture', quantityAvailable: 12, imageUrl: 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?auto=format&fit=crop&w=400&q=80' },
 
-  // Chairs
-  { name: 'Chiavari Gold Chair', category: 'Chairs', quantityAvailable: 200, imageUrl: 'https://images.unsplash.com/photo-1567538096630-e0c55bd6374c?w=400' },
-  { name: 'Chiavari Silver Chair', category: 'Chairs', quantityAvailable: 200, imageUrl: 'https://images.unsplash.com/photo-1567538096630-e0c55bd6374c?w=400' },
-  { name: 'White Folding Chair', category: 'Chairs', quantityAvailable: 300, imageUrl: 'https://images.unsplash.com/photo-1506439773649-6e0eb8cfb237?w=400' },
-  { name: 'Ghost Chair (Clear Acrylic)', category: 'Chairs', quantityAvailable: 80, imageUrl: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=400' },
-  { name: 'Throne Chair (King & Queen)', category: 'Chairs', quantityAvailable: 4, imageUrl: 'https://images.unsplash.com/photo-1567538096630-e0c55bd6374c?w=400' },
-  { name: 'Velvet Banquet Chair', category: 'Chairs', quantityAvailable: 150, imageUrl: 'https://images.unsplash.com/photo-1506439773649-6e0eb8cfb237?w=400' },
-  { name: 'Cross Back Wooden Chair', category: 'Chairs', quantityAvailable: 120, imageUrl: 'https://images.unsplash.com/photo-1567538096630-e0c55bd6374c?w=400' },
+  // Decor
+  { name: 'Floral Centerpiece', category: 'Centerpieces', quantityAvailable: 40, imageUrl: 'https://images.unsplash.com/photo-1487530811015-780780169993?auto=format&fit=crop&w=400&q=80' },
+  { name: 'Candle Centerpiece', category: 'Centerpieces', quantityAvailable: 50, imageUrl: 'https://images.unsplash.com/photo-1519225421980-715cb0215aed?auto=format&fit=crop&w=400&q=80' },
+  { name: 'White Tablecloth', category: 'Tablecloths', quantityAvailable: 50, imageUrl: '/images/white_tablecloth.jpg' },
+  { name: 'Black Tablecloth', category: 'Tablecloths', quantityAvailable: 50, imageUrl: 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?auto=format&fit=crop&w=400&q=80' },
+  { name: 'String Lights', category: 'Lighting', quantityAvailable: 25, imageUrl: 'https://images.unsplash.com/photo-1513151233558-d860c5398176?auto=format&fit=crop&w=400&q=80' },
+  { name: 'Spotlight', category: 'Lighting', quantityAvailable: 10, imageUrl: 'https://images.unsplash.com/photo-1504509546545-e000b4a62425?auto=format&fit=crop&w=400&q=80' },
+  { name: 'Step & Repeat Backdrop', category: 'Backdrops', quantityAvailable: 5, imageUrl: 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&w=400&q=80' },
+  { name: 'Floral Wall Backdrop', category: 'Backdrops', quantityAvailable: 3, imageUrl: 'https://images.unsplash.com/photo-1469371670807-013ccf25f16a?auto=format&fit=crop&w=400&q=80' },
 
-  // Sofas & Lounge Furniture
-  { name: 'White Leather Sofa (3-Seater)', category: 'Sofas', quantityAvailable: 10, imageUrl: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=400' },
-  { name: 'Velvet Loveseat (Blush Pink)', category: 'Sofas', quantityAvailable: 8, imageUrl: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=400' },
-  { name: 'Chesterfield Sofa (Ivory)', category: 'Sofas', quantityAvailable: 6, imageUrl: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=400' },
-  { name: 'Ottoman Cube Set (4 pieces)', category: 'Lounge Furniture', quantityAvailable: 15, imageUrl: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=400' },
-  { name: 'Lounge Armchair (Gold Legs)', category: 'Lounge Furniture', quantityAvailable: 20, imageUrl: 'https://images.unsplash.com/photo-1567538096630-e0c55bd6374c?w=400' },
-  { name: 'Cabana Lounge Set', category: 'Lounge Furniture', quantityAvailable: 5, imageUrl: 'https://images.unsplash.com/photo-1464366400600-7168b8af9bc3?w=400' },
-
-  // Tablecloths
-  { name: 'White Satin Tablecloth (Round 120")', category: 'Tablecloths', quantityAvailable: 100, imageUrl: 'https://images.unsplash.com/photo-1478146059778-26028b07395a?w=400' },
-  { name: 'Ivory Lace Overlay', category: 'Tablecloths', quantityAvailable: 80, imageUrl: 'https://images.unsplash.com/photo-1478146059778-26028b07395a?w=400' },
-  { name: 'Navy Blue Velvet Tablecloth', category: 'Tablecloths', quantityAvailable: 60, imageUrl: 'https://images.unsplash.com/photo-1530103862676-de8c9debad1d?w=400' },
-  { name: 'Gold Sequin Tablecloth', category: 'Tablecloths', quantityAvailable: 50, imageUrl: 'https://images.unsplash.com/photo-1519167758481-83f550bb49b3?w=400' },
-  { name: 'Blush Pink Chiffon Runner', category: 'Tablecloths', quantityAvailable: 70, imageUrl: 'https://images.unsplash.com/photo-1478146059778-26028b07395a?w=400' },
-  { name: 'Black Pintuck Tablecloth', category: 'Tablecloths', quantityAvailable: 60, imageUrl: 'https://images.unsplash.com/photo-1530103862676-de8c9debad1d?w=400' },
-
-  // Centerpieces
-  { name: 'Tall Glass Cylinder Vase', category: 'Centerpieces', quantityAvailable: 60, imageUrl: 'https://images.unsplash.com/photo-1487530811015-780c4e2e5a2c?w=400' },
-  { name: 'Gold Candelabra (5-arm)', category: 'Centerpieces', quantityAvailable: 30, imageUrl: 'https://images.unsplash.com/photo-1519167758481-83f550bb49b3?w=400' },
-  { name: 'Mirror Tile Centerpiece Base', category: 'Centerpieces', quantityAvailable: 50, imageUrl: 'https://images.unsplash.com/photo-1487530811015-780c4e2e5a2c?w=400' },
-  { name: 'Floating Candle Bowl', category: 'Centerpieces', quantityAvailable: 40, imageUrl: 'https://images.unsplash.com/photo-1519167758481-83f550bb49b3?w=400' },
-  { name: 'Acrylic Riser Set', category: 'Centerpieces', quantityAvailable: 35, imageUrl: 'https://images.unsplash.com/photo-1487530811015-780c4e2e5a2c?w=400' },
-  { name: 'Floral Hoop Centerpiece Frame', category: 'Centerpieces', quantityAvailable: 25, imageUrl: 'https://images.unsplash.com/photo-1487530811015-780c4e2e5a2c?w=400' },
-
-  // Lighting
-  { name: 'String Fairy Lights (10m)', category: 'Lighting', quantityAvailable: 50, imageUrl: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=400' },
-  { name: 'Uplighting LED (set of 10)', category: 'Lighting', quantityAvailable: 20, imageUrl: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=400' },
-  { name: 'Chandelier (Crystal, 36")', category: 'Lighting', quantityAvailable: 8, imageUrl: 'https://images.unsplash.com/photo-1519167758481-83f550bb49b3?w=400' },
-  { name: 'Neon Sign (Custom Text)', category: 'Lighting', quantityAvailable: 5, imageUrl: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=400' },
-  { name: 'Lantern Centerpiece Light', category: 'Lighting', quantityAvailable: 40, imageUrl: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=400' },
-  { name: 'Gobo Projector (Monogram)', category: 'Lighting', quantityAvailable: 4, imageUrl: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=400' },
-  { name: 'Dance Floor Lighting Kit', category: 'Lighting', quantityAvailable: 6, imageUrl: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=400' },
-
-  // Backdrops
-  { name: 'White Floral Wall Backdrop (8x8ft)', category: 'Backdrops', quantityAvailable: 5, imageUrl: 'https://images.unsplash.com/photo-1478146059778-26028b07395a?w=400' },
-  { name: 'Gold Sequin Backdrop Curtain', category: 'Backdrops', quantityAvailable: 8, imageUrl: 'https://images.unsplash.com/photo-1519167758481-83f550bb49b3?w=400' },
-  { name: 'Greenery Hedge Wall Panel', category: 'Backdrops', quantityAvailable: 12, imageUrl: 'https://images.unsplash.com/photo-1487530811015-780c4e2e5a2c?w=400' },
-  { name: 'Balloon Arch Frame (10ft)', category: 'Backdrops', quantityAvailable: 6, imageUrl: 'https://images.unsplash.com/photo-1464366400600-7168b8af9bc3?w=400' },
-  { name: 'Acrylic Welcome Sign Stand', category: 'Backdrops', quantityAvailable: 10, imageUrl: 'https://images.unsplash.com/photo-1487530811015-780c4e2e5a2c?w=400' },
-  { name: 'Chuppah Frame (White Wood)', category: 'Backdrops', quantityAvailable: 4, imageUrl: 'https://images.unsplash.com/photo-1519167758481-83f550bb49b3?w=400' },
-
-  // Floral Arrangements
-  { name: 'Bridal Bouquet (White Roses)', category: 'Floral Arrangements', quantityAvailable: 10, imageUrl: 'https://images.unsplash.com/photo-1487530811015-780c4e2e5a2c?w=400' },
-  { name: 'Table Floral Arrangement (Low)', category: 'Floral Arrangements', quantityAvailable: 40, imageUrl: 'https://images.unsplash.com/photo-1487530811015-780c4e2e5a2c?w=400' },
-  { name: 'Tall Floral Arrangement', category: 'Floral Arrangements', quantityAvailable: 20, imageUrl: 'https://images.unsplash.com/photo-1487530811015-780c4e2e5a2c?w=400' },
-  { name: 'Flower Wall Garland (3m)', category: 'Floral Arrangements', quantityAvailable: 15, imageUrl: 'https://images.unsplash.com/photo-1487530811015-780c4e2e5a2c?w=400' },
-  { name: 'Aisle Pew Flowers (set of 10)', category: 'Floral Arrangements', quantityAvailable: 8, imageUrl: 'https://images.unsplash.com/photo-1487530811015-780c4e2e5a2c?w=400' },
-
-  // Speakers & Audio
-  { name: 'Bluetooth Speaker (Large)', category: 'Speakers', quantityAvailable: 10, imageUrl: 'https://images.unsplash.com/photo-1608043152269-423dbba4e7e1?w=400' },
-  { name: 'PA Speaker System (1000W)', category: 'Speakers', quantityAvailable: 6, imageUrl: 'https://images.unsplash.com/photo-1608043152269-423dbba4e7e1?w=400' },
-  { name: 'Wireless Microphone (Handheld)', category: 'Microphones', quantityAvailable: 15, imageUrl: 'https://images.unsplash.com/photo-1478737270239-2f02b77fc618?w=400' },
-  { name: 'Lapel Microphone (Clip-on)', category: 'Microphones', quantityAvailable: 10, imageUrl: 'https://images.unsplash.com/photo-1478737270239-2f02b77fc618?w=400' },
-  { name: 'DJ Mixer & Controller', category: 'Speakers', quantityAvailable: 4, imageUrl: 'https://images.unsplash.com/photo-1608043152269-423dbba4e7e1?w=400' },
-
-  // Projectors & Screens
-  { name: 'HD Projector (4000 lumens)', category: 'Projectors', quantityAvailable: 5, imageUrl: 'https://images.unsplash.com/photo-1478737270239-2f02b77fc618?w=400' },
-  { name: 'Projection Screen (10ft)', category: 'Screens', quantityAvailable: 5, imageUrl: 'https://images.unsplash.com/photo-1478737270239-2f02b77fc618?w=400' },
-  { name: 'LED Video Wall Panel (set of 9)', category: 'Screens', quantityAvailable: 3, imageUrl: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=400' },
+  // Tech & Audio
+  { name: 'Bluetooth Speaker', category: 'Speakers', quantityAvailable: 10, imageUrl: 'https://images.unsplash.com/photo-1608043152269-423dbba4e7e1?auto=format&fit=crop&w=400&q=80' },
+  { name: 'PA Speaker System', category: 'Speakers', quantityAvailable: 4, imageUrl: 'https://images.unsplash.com/photo-1545454675-3531b543be5d?auto=format&fit=crop&w=400&q=80' },
+  { name: 'Wireless Microphone', category: 'Microphones', quantityAvailable: 8, imageUrl: 'https://images.unsplash.com/photo-1590602847861-f357a9332bbc?auto=format&fit=crop&w=400&q=80' },
+  { name: 'Projector', category: 'Projectors', quantityAvailable: 5, imageUrl: 'https://images.unsplash.com/photo-1478720568477-152d9b164e26?auto=format&fit=crop&w=400&q=80' },
+  { name: 'Projection Screen', category: 'Screens', quantityAvailable: 5, imageUrl: 'https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?auto=format&fit=crop&w=400&q=80' },
+  { name: 'Laptop', category: 'Computers', quantityAvailable: 6, imageUrl: 'https://images.unsplash.com/photo-1496181133206-80ce9b88a853?auto=format&fit=crop&w=400&q=80' },
 
   // Catering
-  { name: 'Chafing Dish Set (Stainless)', category: 'Buffet Equipment', quantityAvailable: 30, imageUrl: 'https://images.unsplash.com/photo-1530103862676-de8c9debad1d?w=400' },
-  { name: 'Beverage Dispenser (3 gallon)', category: 'Buffet Equipment', quantityAvailable: 20, imageUrl: 'https://images.unsplash.com/photo-1530103862676-de8c9debad1d?w=400' },
-  { name: 'Wine Glass (set of 12)', category: 'Glassware', quantityAvailable: 50, imageUrl: 'https://images.unsplash.com/photo-1464366400600-7168b8af9bc3?w=400' },
-  { name: 'Champagne Flute (set of 12)', category: 'Glassware', quantityAvailable: 50, imageUrl: 'https://images.unsplash.com/photo-1464366400600-7168b8af9bc3?w=400' },
-  { name: 'Silver Cutlery Set (per 10)', category: 'Cutlery', quantityAvailable: 60, imageUrl: 'https://images.unsplash.com/photo-1530103862676-de8c9debad1d?w=400' },
-  { name: 'White China Dinner Plate (per 10)', category: 'Serving Dishes', quantityAvailable: 80, imageUrl: 'https://images.unsplash.com/photo-1530103862676-de8c9debad1d?w=400' },
-  { name: 'Tiered Dessert Stand', category: 'Serving Dishes', quantityAvailable: 20, imageUrl: 'https://images.unsplash.com/photo-1519167758481-83f550bb49b3?w=400' },
-  { name: 'Candy Bar Display Set', category: 'Serving Dishes', quantityAvailable: 10, imageUrl: 'https://images.unsplash.com/photo-1519167758481-83f550bb49b3?w=400' },
+  { name: 'Chafing Dish Set', category: 'Buffet Equipment', quantityAvailable: 20, imageUrl: 'https://images.unsplash.com/photo-1555244162-803834f70033?auto=format&fit=crop&w=400&q=80' },
+  { name: 'Wine Glass Set (12)', category: 'Glassware', quantityAvailable: 30, imageUrl: 'https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?auto=format&fit=crop&w=400&q=80' },
+  { name: 'Dinner Plate Set (12)', category: 'Serving Dishes', quantityAvailable: 25, imageUrl: 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?auto=format&fit=crop&w=400&q=80' },
+  { name: 'Cutlery Set (12)', category: 'Cutlery', quantityAvailable: 25, imageUrl: 'https://images.unsplash.com/photo-1584269600464-37b1b58a9fe7?auto=format&fit=crop&w=400&q=80' },
 
-  // Tents & Outdoor
-  { name: 'Marquee Tent (20x40ft)', category: 'Tents', quantityAvailable: 3, imageUrl: 'https://images.unsplash.com/photo-1464366400600-7168b8af9bc3?w=400' },
-  { name: 'Canopy Tent (10x10ft)', category: 'Tents', quantityAvailable: 10, imageUrl: 'https://images.unsplash.com/photo-1464366400600-7168b8af9bc3?w=400' },
-  { name: 'Dance Floor (20x20ft Wood)', category: 'Dance Floors', quantityAvailable: 3, imageUrl: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=400' },
-  { name: 'Dance Floor (LED Light-Up)', category: 'Dance Floors', quantityAvailable: 2, imageUrl: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=400' },
-  { name: 'Generator (8000W Silent)', category: 'Generators', quantityAvailable: 4, imageUrl: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400' },
-]
+  // Other
+  { name: 'Event Tent 10x10', category: 'Tents', quantityAvailable: 5, imageUrl: 'https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?auto=format&fit=crop&w=400&q=80' },
+  { name: 'Dance Floor (20x20)', category: 'Dance Floors', quantityAvailable: 2, imageUrl: 'https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?auto=format&fit=crop&w=400&q=80' },
+  { name: 'Generator', category: 'Generators', quantityAvailable: 3, imageUrl: 'https://images.unsplash.com/photo-1621905251189-08b45d6a269e?auto=format&fit=crop&w=400&q=80' },
+];
 
 async function seed() {
-  await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/eventInventory')
-  await Product.insertMany(products)
-  console.log(`✅ Seeded ${products.length} products`)
-  await mongoose.disconnect()
+  const mongoURI = process.env.MONGODB_URI || 'mongodb+srv://numi-dina:7nmyCER4P8zq.pq@project.j8malzx.mongodb.net/productseventInventory?appName=project';
+  await mongoose.connect(mongoURI);
+  console.log('Connected to MongoDB');
+
+  await Product.deleteMany({});
+  console.log('Cleared existing products');
+
+  await Product.insertMany(products);
+  console.log(`Inserted ${products.length} products`);
+
+  await mongoose.disconnect();
+  console.log('Done!');
 }
 
-seed().catch(console.error)
+seed().catch(console.error);
