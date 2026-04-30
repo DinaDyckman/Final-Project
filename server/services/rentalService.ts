@@ -1,5 +1,5 @@
 import Rental from '../models/rentalModel';
-import Product from '../models/productModel';
+import { Product } from '../models/productModel';
 
 export const createRental = async (rentalData: any) => {
   const { userId, items, startDate, endDate } = rentalData;
@@ -46,4 +46,9 @@ export const createRental = async (rentalData: any) => {
   });
 
   return await newRental.save();
+};
+
+
+export const getRentalsByUser = async (userId: string) => {
+  return await Rental.find({ userId }).populate('items.productId');
 };
