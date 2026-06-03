@@ -1,7 +1,7 @@
 import express from 'express';
 import * as productService from '../services/productService';
 import { authMiddleware } from '../middlewares/authMiddleware';
-import { authorizeAdmin } from '../middlewares/authorizationMid';
+import { authorizeAdmin } from '../middlewares/authorizationMiddleware';
 
 const router = express.Router();
 
