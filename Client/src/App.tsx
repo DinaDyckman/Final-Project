@@ -11,6 +11,9 @@ function App() {
   const [cartOpen, setCartOpen] = useState(false)
   const [showPromoModal, setShowPromoModal] = useState(true)
   const [showAuthModal, setShowAuthModal] = useState(false)
+  
+  // State חדש כדי לשלוט בפתיחת הצ'אט ישירות מהמודל
+  const [isChatForceOpen, setIsChatForceOpen] = useState(false)
 
   const getInitialAuthState = () => {
     const token = localStorage.getItem('token') || sessionStorage.getItem('token')
@@ -34,6 +37,18 @@ function App() {
     }
   }
 
+  // פונקציה שמטפלת בסגירת המודל והפעלת הצ'אט בוט
+  const handlePromoClose = (eventData?: { type: string; date: string }) => {
+    setShowPromoModal(false)
+    setIsChatForceOpen(true) // פותח את הצ'אט בוט אוטומטית!
+    
+    if (eventData) {
+      // כאן שומרים את סוג האירוע והתאריך שהמשתמש בחר בשביל הבוט
+      sessionStorage.setItem('eventType', eventData.type)
+      sessionStorage.setItem('eventDate', eventData.date)
+    }
+  }
+
   const isBlurred = showPromoModal || showAuthModal
 
   return (
@@ -54,7 +69,7 @@ function App() {
             </Routes>
           </div>
 
-          {/* Auth Modal - only shown when user clicks My Account while unauthenticated */}
+          {/* Auth Modal */}
           {showAuthModal && (
             <div
               style={{
@@ -76,12 +91,13 @@ function App() {
             </div>
           )}
 
-          {/* AI Promo Modal - shown on first load */}
+          {/* AI Promo Modal - Simcha Bot */}
           {showPromoModal && (
-            <AiPromoModal onClose={() => setShowPromoModal(false)} />
+            <AiPromoModal onClose={handlePromoClose} />
           )}
 
-          {isAuthenticated && <ChatBox cartOpen={cartOpen} />}
+   
+<ChatBox cartOpen={cartOpen} />
         </div>
 
         <style>{`
