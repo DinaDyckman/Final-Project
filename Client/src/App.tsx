@@ -1,31 +1,97 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { useState } from 'react'
-import { LanguageProvider } from './context/LanguageContext'
-import Navbar from './components/Navbar'
-import ChatBox from './components/ChatBox'
-import Home from './pages/Home'
+import AuthPage from './pages/AuthPage'
 import Products from './pages/Products'
-import Login from './pages/Login'
-import Register from './pages/Register'
-
 import ThankYou from './pages/ThankYou'
+import ChatBox from './components/ChatBox'
+import AiPromoModal from './components/AiPromoModal'
+import { LanguageProvider } from './context/LanguageContext'
 
 function App() {
   const [cartOpen, setCartOpen] = useState(false)
+  const [showPromoModal, setShowPromoModal] = useState(true)
+  const [showAuthModal, setShowAuthModal] = useState(false)
+
+  const getInitialAuthState = () => {
+    const token = localStorage.getItem('token') || sessionStorage.getItem('token')
+    return !!(token && token !== 'null' && token !== 'undefined' && token.length > 20)
+  }
+
+  const [isAuthenticated, setIsAuthenticated] = useState(getInitialAuthState)
+
+  const refreshAuthState = () => {
+    const token = localStorage.getItem('token') || sessionStorage.getItem('token')
+    const isValid = !!(token && token !== 'null' && token !== 'undefined' && token.length > 20)
+    setIsAuthenticated(isValid)
+    if (isValid) setShowAuthModal(false)
+  }
+
+  const handleMyAccountClick = () => {
+    if (!isAuthenticated) {
+      setShowAuthModal(true)
+    } else {
+      // already handled inside Products via profileOpen dropdown
+    }
+  }
+
+  const isBlurred = showPromoModal || showAuthModal
 
   return (
     <LanguageProvider>
-      <BrowserRouter>
-        <Navbar />
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/products" element={<Products cartOpen={cartOpen} setCartOpen={setCartOpen} />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/thank-you" element={<ThankYou />} />
-        </Routes>
-        <ChatBox cartOpen={cartOpen} />
-      </BrowserRouter>
+      <Router>
+        <div style={{ position: 'relative', minHeight: '100vh' }}>
+          {/* Main layout - blurred when any modal is open */}
+          <div style={{
+            filter: isBlurred ? 'blur(7px)' : 'none',
+            pointerEvents: isBlurred ? 'none' : 'auto',
+            transition: 'filter 0.35s ease'
+          }}>
+            <Routes>
+              <Route path="/" element={<Products cartOpen={cartOpen} setCartOpen={setCartOpen} isAuthenticated={isAuthenticated} onMyAccountClick={handleMyAccountClick} onLogout={refreshAuthState} />} />
+              <Route path="/products" element={<Products cartOpen={cartOpen} setCartOpen={setCartOpen} isAuthenticated={isAuthenticated} onMyAccountClick={handleMyAccountClick} onLogout={refreshAuthState} />} />
+              <Route path="/thank-you" element={<ThankYou />} />
+              <Route path="*" element={<Navigate to="/products" replace />} />
+            </Routes>
+          </div>
+
+          {/* Auth Modal - only shown when user clicks My Account while unauthenticated */}
+          {showAuthModal && (
+            <div
+              style={{
+                position: 'fixed',
+                top: 0, left: 0, right: 0, bottom: 0,
+                backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                backdropFilter: 'blur(4px)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                zIndex: 999999,
+                animation: 'fadeIn 0.3s ease'
+              }}
+              onClick={(e) => { if (e.target === e.currentTarget) setShowAuthModal(false) }}
+            >
+              <div style={{ animation: 'modalSlideIn 0.4s ease-out', position: 'relative' }}>
+                <AuthPage onAuthSuccess={refreshAuthState} onClose={() => setShowAuthModal(false)} />
+              </div>
+            </div>
+          )}
+
+          {/* AI Promo Modal - shown on first load */}
+          {showPromoModal && (
+            <AiPromoModal onClose={() => setShowPromoModal(false)} />
+          )}
+
+          {isAuthenticated && <ChatBox cartOpen={cartOpen} />}
+        </div>
+
+        <style>{`
+          @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+          @keyframes modalSlideIn {
+            from { opacity: 0; transform: scale(0.85) translateY(-40px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+          }
+        `}</style>
+      </Router>
     </LanguageProvider>
   )
 }
