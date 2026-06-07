@@ -1,4 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
+
+// @ts-ignore
 import '../styles/ChatBox.css'
 
 interface Message {
@@ -24,7 +26,7 @@ function ChatBox({ cartOpen }: { cartOpen: boolean }) {
     scrollToBottom()
   }, [messages])
 
-  // ✨ ה-useEffect החדש: מקשיב למודל ופותח את הצ'אט בוט אוטומטית!
+
   useEffect(() => {
     const handleOpenChat = () => {
       setIsOpen(true)

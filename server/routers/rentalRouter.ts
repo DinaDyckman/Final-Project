@@ -14,7 +14,7 @@ router.post('/checkout', async (req: Request, res: Response) => {
     const newRental = await rentalService.createRental(req.body);
 
     res.status(201).json({
-      message: 'Rental placed successfully! 🎊',
+      message: 'Rental placed successfully! ',
       rental: newRental
     });
   } catch (error: any) {

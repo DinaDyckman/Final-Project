@@ -7,6 +7,7 @@ import aiRouter from './routers/aiRouter';
 import productRouter from './routers/productRouter';
 import rentalRouter from './routers/rentalRouter';
 import userRouter from './routers/userRouter';
+import cartRouter from './routers/cartRouter';
 
 // 1. טעינת משתני הסביבה (חייב להיות בהתחלה!)
 dotenv.config();
@@ -27,7 +28,7 @@ app.use('/api/ai', aiRouter);
 app.use('/api/products', productRouter);
 app.use('/api/rentals', rentalRouter);
 app.use('/api/users', userRouter);
-
+app.use('/api/cart', cartRouter);
 
 // 6. בדיקת בריאות לשרת (אופציונלי - כדי לראות שהכל עובד)
 app.get('/', (req, res) => {

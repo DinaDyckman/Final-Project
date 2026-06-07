@@ -1,30 +1,55 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import AuthPage from './pages/AuthPage'
 import Products from './pages/Products'
 import ThankYou from './pages/ThankYou'
 import ChatBox from './components/ChatBox'
 import AiPromoModal from './components/AiPromoModal'
 import { LanguageProvider } from './context/LanguageContext'
+import { authService } from './services/authService'
+
+authService.rehydrateSession()
 
 function App() {
   const [cartOpen, setCartOpen] = useState(false)
-  const [showPromoModal, setShowPromoModal] = useState(true)
   const [showAuthModal, setShowAuthModal] = useState(false)
-  
-  // State חדש כדי לשלוט בפתיחת הצ'אט ישירות מהמודל
   const [isChatForceOpen, setIsChatForceOpen] = useState(false)
+  
+  // 🌟 מתחילים כ-false זמני כדי שהעמוד לא יתרסק, ונשנה אותו בתוך ה-useEffect
+  const [showPromoModal, setShowPromoModal] = useState(false)
 
   const getInitialAuthState = () => {
-    const token = localStorage.getItem('token') || sessionStorage.getItem('token')
+    const token = authService.getToken()
     return !!(token && token !== 'null' && token !== 'undefined' && token.length > 20)
   }
 
   const [isAuthenticated, setIsAuthenticated] = useState(getInitialAuthState)
 
+  const getCurrentUserId = () => {
+    const user = authService.getCurrentUser()
+    return user?.id || 'guest'
+  }
+
+  const [currentUserId, setCurrentUserId] = useState(getCurrentUserId)
+
+  // 🌟 אפשרות 1 המתוקנת: בודקים ומציגים את הפרסומת רק אחרי שהיוזר איידי מוכן ב-100%
+  useEffect(() => {
+    const userId = getCurrentUserId()
+    const hasSeenPromo = sessionStorage.getItem(`hasSeenPromo_${userId}`)
+    
+    if (hasSeenPromo !== 'true') {
+      setShowPromoModal(true)
+    } else {
+      setShowPromoModal(false)
+    }
+  }, [currentUserId, isAuthenticated]) // ירוץ בכל פעם שהמשתמש משתנה
+
   const refreshAuthState = () => {
-    const token = localStorage.getItem('token') || sessionStorage.getItem('token')
+    const token = authService.getToken()
     const isValid = !!(token && token !== 'null' && token !== 'undefined' && token.length > 20)
+    const newUserId = getCurrentUserId() 
+    
+    setCurrentUserId(newUserId)
     setIsAuthenticated(isValid)
     if (isValid) setShowAuthModal(false)
   }
@@ -32,18 +57,18 @@ function App() {
   const handleMyAccountClick = () => {
     if (!isAuthenticated) {
       setShowAuthModal(true)
-    } else {
-      // already handled inside Products via profileOpen dropdown
     }
   }
 
-  // פונקציה שמטפלת בסגירת המודל והפעלת הצ'אט בוט
   const handlePromoClose = (eventData?: { type: string; date: string }) => {
     setShowPromoModal(false)
-    setIsChatForceOpen(true) // פותח את הצ'אט בוט אוטומטית!
+    setIsChatForceOpen(true)
     
+    // 🌟 שומרים את הסימון ספציפית לפי ה-ID של המשתמש הנוכחי בתוך הסשן
+    const userId = getCurrentUserId()
+    sessionStorage.setItem(`hasSeenPromo_${userId}`, 'true')
+
     if (eventData) {
-      // כאן שומרים את סוג האירוע והתאריך שהמשתמש בחר בשביל הבוט
       sessionStorage.setItem('eventType', eventData.type)
       sessionStorage.setItem('eventDate', eventData.date)
     }
@@ -55,21 +80,39 @@ function App() {
     <LanguageProvider>
       <Router>
         <div style={{ position: 'relative', minHeight: '100vh' }}>
-          {/* Main layout - blurred when any modal is open */}
           <div style={{
             filter: isBlurred ? 'blur(7px)' : 'none',
             pointerEvents: isBlurred ? 'none' : 'auto',
             transition: 'filter 0.35s ease'
           }}>
             <Routes>
-              <Route path="/" element={<Products cartOpen={cartOpen} setCartOpen={setCartOpen} isAuthenticated={isAuthenticated} onMyAccountClick={handleMyAccountClick} onLogout={refreshAuthState} />} />
-              <Route path="/products" element={<Products cartOpen={cartOpen} setCartOpen={setCartOpen} isAuthenticated={isAuthenticated} onMyAccountClick={handleMyAccountClick} onLogout={refreshAuthState} />} />
+              <Route path="/" element={
+                <Products
+                  key={currentUserId}
+                  userId={currentUserId}
+                  cartOpen={cartOpen}
+                  setCartOpen={setCartOpen}
+                  isAuthenticated={isAuthenticated}
+                  onMyAccountClick={handleMyAccountClick}
+                  onLogout={refreshAuthState}
+                />
+              } />
+              <Route path="/products" element={
+                <Products
+                  key={currentUserId}
+                  userId={currentUserId}
+                  cartOpen={cartOpen}
+                  setCartOpen={setCartOpen}
+                  isAuthenticated={isAuthenticated}
+                  onMyAccountClick={handleMyAccountClick}
+                  onLogout={refreshAuthState}
+                />
+              } />
               <Route path="/thank-you" element={<ThankYou />} />
               <Route path="*" element={<Navigate to="/products" replace />} />
             </Routes>
           </div>
 
-          {/* Auth Modal */}
           {showAuthModal && (
             <div
               style={{
@@ -91,13 +134,11 @@ function App() {
             </div>
           )}
 
-          {/* AI Promo Modal - Simcha Bot */}
           {showPromoModal && (
             <AiPromoModal onClose={handlePromoClose} />
           )}
 
-   
-<ChatBox cartOpen={cartOpen} />
+          <ChatBox cartOpen={cartOpen} />
         </div>
 
         <style>{`
