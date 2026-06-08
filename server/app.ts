@@ -1,4 +1,4 @@
-import 'dotenv/config';
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 import express from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors'; // ספרייה שמאפשרת ל-React לדבר עם השרת
