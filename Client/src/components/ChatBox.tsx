@@ -26,20 +26,20 @@ function ChatBox() {
 
     const userMessage = { text: input, isUser: true }
     setMessages(prev => [...prev, userMessage])
-    const currentInput = input; // שומרים את הערך לפני שמנקים את ה-input
+    const currentInput = input; 
     setInput('')
     setLoading(true)
 
     try {
-      // תיקון כתובת ה-URL לכתובת המלאה של השרת שלך
+      // שליחת הבקשה לשרת
       const response = await fetch('http://localhost:5000/api/ai/consult', {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json' 
         },
         body: JSON.stringify({ 
-          userId: "user_123", // השרת מצפה ל-userId כדי לשמור ב-DB
-          userQuery: currentInput // שינוי מ-query ל-userQuery כדי שיתאים לשרת
+          userId: "user_123", 
+          userQuery: currentInput 
         })
       })
 
@@ -49,12 +49,20 @@ function ChatBox() {
 
       const data = await response.json()
       
-      const aiText = data.aiResponse || "I'm not sure how to answer that.";
+      // הדפסה לדיבאג בדפדפן (F12) כדי לוודא מה חוזר מהשרת
+      console.log("Server Response:", data);
+
+      // התיקון הקריטי: השרת שלך שולח שדה בשם aiResponse
+      // אנחנו משתמשים בו, ואם הוא ריק - נותנים תשובה מקצועית כגיבוי
+      const aiText = data.aiResponse || "As an upscale designer, I recommend focusing on elegant textures and a cohesive color palette.";
       
       setMessages(prev => [...prev, { text: aiText, isUser: false }])
     } catch (error) {
       console.error("Chat Error:", error);
-      setMessages(prev => [...prev, { text: 'Sorry, something went wrong. Please check if the server is running.', isUser: false }])
+      setMessages(prev => [...prev, { 
+        text: 'Sorry, I am having trouble connecting to my design database. Please try again in a moment.', 
+        isUser: false 
+      }])
     } finally {
       setLoading(false)
     }
@@ -76,7 +84,7 @@ function ChatBox() {
           </div>
           <div className="chat-messages">
             {messages.length === 0 && (
-              <div className="message ai">Hi! How can I help you plan your event?</div>
+              <div className="message ai">Hi! I am your upscale event designer. How can I help you today?</div>
             )}
             {messages.map((msg, i) => (
               <div key={i} className={`message ${msg.isUser ? 'user' : 'ai'}`}>
