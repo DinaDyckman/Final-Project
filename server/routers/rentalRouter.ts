@@ -68,7 +68,7 @@ router.get('/all', authMiddleware, authorizeAdmin, async (req: Request, res: Res
 router.patch('/:id/status', authMiddleware, authorizeAdmin, async (req: Request, res: Response) => {
   try {
     const { status } = req.body;
-    const rental = await rentalService.updateRentalStatus(req.params.id, status);
+    const rental = await rentalService.updateRentalStatus(req.params.id as string, status);
     res.json(rental);
   } catch (error: any) {
     res.status(500).json({ message: 'Failed to update rental status.' });
