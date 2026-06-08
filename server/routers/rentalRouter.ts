@@ -25,7 +25,7 @@ router.post('/checkout', async (req: Request, res: Response) => {
 
 router.get('/user/:userId', async (req: Request, res: Response) => {
   try {
-    const rentals = await rentalService.getRentalsByUser(req.params.userId);
+    const rentals = await rentalService.getRentalsByUser(req.params.userId as string);
     res.json(rentals);
   } catch (error: any) {
     res.status(500).json({ message: 'Failed to fetch rental history.' });
