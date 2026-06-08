@@ -5,11 +5,12 @@ function AddProduct() {
   const [name, setName] = useState('')
   const [category, setCategory] = useState('')
   const [quantity, setQuantity] = useState(0)
+  const [price, setPrice] = useState(0)
   const [imageUrl, setImageUrl] = useState('')
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    await productService.create({ name, category, quantityAvailable: quantity, imageUrl })
+    await productService.create({ name, category, quantityAvailable: quantity, price: 0, imageUrl })
     alert('Product added!')
     setName('')
     setCategory('')

@@ -231,6 +231,29 @@ function Products({ cartOpen, setCartOpen, isAuthenticated, onMyAccountClick, on
                       onMouseLeave={e => e.currentTarget.style.color = '#bbb'}
                     >✕</button>
                   </div>
+
+                  {/* ⚙️ כפתור ה-Admin Panel החדש מוזרק כאן ויופיע רק למנהלים */}
+                  {authService.getCurrentUser()?.role === 'Admin' && (
+                    <button
+                      onClick={() => {
+                        navigate('/admin')
+                        setProfileOpen(false)
+                      }}
+                      style={{
+                        width: '100%', padding: '14px 20px', background: 'transparent',
+                        border: 'none', color: '#5c1a33', fontSize: '14px', letterSpacing: '1px',
+                        textAlign: 'left', cursor: 'pointer', textTransform: 'uppercase',
+                        transition: 'background 0.2s', borderBottom: '1px solid #f0f0f0',
+                        display: 'flex', alignItems: 'center', gap: '8px'
+                      }}
+                      onMouseEnter={e => e.currentTarget.style.background = '#faf7f5'}
+                      onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                    >
+                      <span></span> Admin Panel
+                    </button>
+                  )}
+
+                  {/* כפתור ה-Logout המקורי נמצא כאן מתחתיו */}
                   <button
                     onClick={handleLogout}
                     style={{
@@ -312,7 +335,9 @@ function Products({ cartOpen, setCartOpen, isAuthenticated, onMyAccountClick, on
                 <div style={{ padding: '16px' }}>
                   <h3 style={{ fontWeight: 400, fontSize: '1rem', color: '#5c1a33', marginBottom: '6px' }}>{product.name}</h3>
                   <p style={{ fontSize: '12px', color: '#999', letterSpacing: '1px', textTransform: 'uppercase', marginBottom: '4px' }}>{product.category}</p>
-                  <p style={{ fontSize: '13px', color: '#555', marginBottom: '14px' }}>Available: {product.quantityAvailable}</p>
+                  <p style={{ fontSize: '13px', color: '#555', marginBottom: '4px' }}>Available: {product.quantityAvailable}</p>
+                  {/* 🌟 הוספת המחיר המאובטח לתצוגה בכרטיס המוצר */}
+                  <p style={{ fontSize: '14px', fontWeight: '600', color: '#d4af37', marginBottom: '14px' }}>Price: ${product.price || 0}</p>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <input
                       type="number"

@@ -1,8 +1,9 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import AuthPage from './pages/AuthPage'
 import Products from './pages/Products'
 import ThankYou from './pages/ThankYou'
+import AdminPanel from './pages/AdminPanel'  // ✅ NEW
 import ChatBox from './components/ChatBox'
 import AiPromoModal from './components/AiPromoModal'
 import { LanguageProvider } from './context/LanguageContext'
@@ -12,11 +13,10 @@ authService.rehydrateSession()
 
 function App() {
   const [cartOpen, setCartOpen] = useState(false)
+  const [showPromoModal, setShowPromoModal] = useState(true)
   const [showAuthModal, setShowAuthModal] = useState(false)
   const [isChatForceOpen, setIsChatForceOpen] = useState(false)
-  
-  // 🌟 מתחילים כ-false זמני כדי שהעמוד לא יתרסק, ונשנה אותו בתוך ה-useEffect
-  const [showPromoModal, setShowPromoModal] = useState(false)
+  const [mountKey, setMountKey] = useState(0)
 
   const getInitialAuthState = () => {
     const token = authService.getToken()
@@ -32,42 +32,23 @@ function App() {
 
   const [currentUserId, setCurrentUserId] = useState(getCurrentUserId)
 
-  // 🌟 אפשרות 1 המתוקנת: בודקים ומציגים את הפרסומת רק אחרי שהיוזר איידי מוכן ב-100%
-  useEffect(() => {
-    const userId = getCurrentUserId()
-    const hasSeenPromo = sessionStorage.getItem(`hasSeenPromo_${userId}`)
-    
-    if (hasSeenPromo !== 'true') {
-      setShowPromoModal(true)
-    } else {
-      setShowPromoModal(false)
-    }
-  }, [currentUserId, isAuthenticated]) // ירוץ בכל פעם שהמשתמש משתנה
-
   const refreshAuthState = () => {
     const token = authService.getToken()
     const isValid = !!(token && token !== 'null' && token !== 'undefined' && token.length > 20)
-    const newUserId = getCurrentUserId() 
-    
+    const newUserId = getCurrentUserId()
     setCurrentUserId(newUserId)
     setIsAuthenticated(isValid)
-    if (isValid) setShowAuthModal(false)
+    setShowAuthModal(false)
+    setMountKey(prev => prev + 1)
   }
 
   const handleMyAccountClick = () => {
-    if (!isAuthenticated) {
-      setShowAuthModal(true)
-    }
+    if (!isAuthenticated) setShowAuthModal(true)
   }
 
   const handlePromoClose = (eventData?: { type: string; date: string }) => {
     setShowPromoModal(false)
     setIsChatForceOpen(true)
-    
-    // 🌟 שומרים את הסימון ספציפית לפי ה-ID של המשתמש הנוכחי בתוך הסשן
-    const userId = getCurrentUserId()
-    sessionStorage.setItem(`hasSeenPromo_${userId}`, 'true')
-
     if (eventData) {
       sessionStorage.setItem('eventType', eventData.type)
       sessionStorage.setItem('eventDate', eventData.date)
@@ -88,7 +69,7 @@ function App() {
             <Routes>
               <Route path="/" element={
                 <Products
-                  key={currentUserId}
+                  key={mountKey}
                   userId={currentUserId}
                   cartOpen={cartOpen}
                   setCartOpen={setCartOpen}
@@ -99,7 +80,7 @@ function App() {
               } />
               <Route path="/products" element={
                 <Products
-                  key={currentUserId}
+                  key={mountKey}
                   userId={currentUserId}
                   cartOpen={cartOpen}
                   setCartOpen={setCartOpen}
@@ -108,6 +89,8 @@ function App() {
                   onLogout={refreshAuthState}
                 />
               } />
+              {/* ✅ NEW: Admin route */}
+              <Route path="/admin" element={<AdminPanel />} />
               <Route path="/thank-you" element={<ThankYou />} />
               <Route path="*" element={<Navigate to="/products" replace />} />
             </Routes>
@@ -116,15 +99,11 @@ function App() {
           {showAuthModal && (
             <div
               style={{
-                position: 'fixed',
-                top: 0, left: 0, right: 0, bottom: 0,
+                position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
                 backgroundColor: 'rgba(0, 0, 0, 0.5)',
                 backdropFilter: 'blur(4px)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                zIndex: 999999,
-                animation: 'fadeIn 0.3s ease'
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                zIndex: 999999, animation: 'fadeIn 0.3s ease'
               }}
               onClick={(e) => { if (e.target === e.currentTarget) setShowAuthModal(false) }}
             >
@@ -134,10 +113,7 @@ function App() {
             </div>
           )}
 
-          {showPromoModal && (
-            <AiPromoModal onClose={handlePromoClose} />
-          )}
-
+          {showPromoModal && <AiPromoModal onClose={handlePromoClose} />}
           <ChatBox cartOpen={cartOpen} />
         </div>
 
