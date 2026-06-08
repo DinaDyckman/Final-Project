@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { productService } from '../services/productService'
+import { authService } from '../services/authService'
 import { Product, CartItem } from '../types'
 
 const CATEGORY_GROUPS: Record<string, string[]> = {
@@ -10,12 +12,51 @@ const CATEGORY_GROUPS: Record<string, string[]> = {
   'Other': ['Tents', 'Generators', 'Portable Restrooms', 'Dance Floors'],
 }
 
-function Products() {
+function Products({ cartOpen, setCartOpen }: { cartOpen: boolean, setCartOpen: (open: boolean) => void }) {
   const [products, setProducts] = useState<Product[]>([])
   const [selectedCategories, setSelectedCategories] = useState<string[]>([])
   const [cart, setCart] = useState<CartItem[]>([])
   const [quantities, setQuantities] = useState<Record<string, number>>({})
-  const [cartOpen, setCartOpen] = useState(false)
+  const navigate = useNavigate()
+  const [checkoutOpen, setCheckoutOpen] = useState(false)
+  const [startDate, setStartDate] = useState('')
+  const [endDate, setEndDate] = useState('')
+  const [userName, setUserName] = useState<string>('Guest')
+
+  const handleLogout = () => {
+    authService.logout()
+    window.location.reload() // Force refresh to trigger auth state update
+  }
+
+  // Get user name on component mount
+  useEffect(() => {
+    const currentUser = authService.getCurrentUser()
+    if (currentUser && currentUser.name) {
+      setUserName(currentUser.name)
+    }
+  }, [])
+
+  const checkout = async () => {
+    if (!startDate || !endDate) return alert('Please select both dates.')
+    if (endDate <= startDate) return alert('End date must be after start date.')
+    const userId = localStorage.getItem('userId') || 'user_123'
+    const items = cart.map(i => ({ productId: i.product._id, quantity: i.quantity }))
+    try {
+      const res = await fetch('/api/rentals/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, items, startDate, endDate })
+      })
+      if (!res.ok) throw new Error('Checkout failed')
+      const data = await res.json()
+      setCart([])
+      setCartOpen(false)
+      setCheckoutOpen(false)
+      navigate('/thank-you', { state: { totalPrice: data.rental.totalPrice } })
+    } catch (error) {
+      alert('Checkout failed, please try again.')
+    }
+  }
 
   useEffect(() => {
     productService.getAll().then(setProducts).catch(console.error)
@@ -96,9 +137,46 @@ function Products() {
       <div style={{ flex: 1, padding: '30px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
           <h1 style={{ fontWeight: 300, fontSize: '2rem', color: '#5c1a33', letterSpacing: '2px' }}>Available Items</h1>
-          <button onClick={() => setCartOpen(true)} style={{ position: 'relative', padding: '10px 20px', background: '#5c1a33' }}>
-            🛒 Cart {cartTotal > 0 && <span style={{ background: '#d4af37', color: '#5c1a33', borderRadius: '50%', padding: '2px 7px', fontSize: '12px', marginLeft: '6px' }}>{cartTotal}</span>}
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+            <div style={{
+              fontSize: '16px',
+              fontWeight: '400',
+              color: '#5c1a33',
+              letterSpacing: '0.5px',
+              padding: '0 8px'
+            }}>
+              Welcome, <span style={{ fontWeight: '600', color: '#7d2e54' }}>{userName}</span>
+            </div>
+            <button onClick={() => setCartOpen(true)} style={{ position: 'relative', padding: '10px 20px', background: '#5c1a33', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '14px', fontWeight: '500' }}>
+              Cart {cartTotal > 0 && <span style={{ background: '#d4af37', color: '#5c1a33', borderRadius: '50%', padding: '2px 7px', fontSize: '12px', marginLeft: '6px' }}>{cartTotal}</span>}
+            </button>
+            <button 
+              onClick={handleLogout}
+              style={{ 
+                padding: '10px 20px', 
+                background: 'transparent', 
+                color: '#5c1a33', 
+                border: '2px solid #5c1a33', 
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontSize: '14px',
+                fontWeight: '500',
+                letterSpacing: '1px',
+                transition: 'all 0.3s',
+                textTransform: 'uppercase'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = '#5c1a33'
+                e.currentTarget.style.color = 'white'
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'transparent'
+                e.currentTarget.style.color = '#5c1a33'
+              }}
+            >
+              Logout
+            </button>
+          </div>
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '24px' }}>
@@ -158,11 +236,28 @@ function Products() {
           </div>
           {cart.length > 0 && (
             <div style={{ padding: '20px', borderTop: '1px solid #e8e8e8' }}>
-              <button style={{ width: '100%', padding: '14px', background: '#5c1a33', color: 'white', fontSize: '14px', letterSpacing: '1px' }}>
+              <button onClick={() => setCheckoutOpen(true)} style={{ width: '100%', padding: '14px', background: '#5c1a33', color: 'white', fontSize: '14px', letterSpacing: '1px' }}>
                 Proceed to Checkout
               </button>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Date Picker Popup */}
+      {checkoutOpen && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 300, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ background: 'white', padding: '40px', width: '380px', border: '1px solid #e8e8e8', boxShadow: '0 10px 40px rgba(92,26,51,0.2)' }}>
+            <h2 style={{ fontWeight: 300, fontSize: '1.5rem', color: '#5c1a33', letterSpacing: '2px', marginBottom: '30px' }}>Select Dates</h2>
+            <label style={{ fontSize: '12px', color: '#999', letterSpacing: '1px', textTransform: 'uppercase' }}>Start Date</label>
+            <input type="date" value={startDate} min={new Date().toISOString().split('T')[0]} onChange={e => setStartDate(e.target.value)} style={{ width: '100%', marginTop: '6px', marginBottom: '20px' }} />
+            <label style={{ fontSize: '12px', color: '#999', letterSpacing: '1px', textTransform: 'uppercase' }}>End Date</label>
+            <input type="date" value={endDate} min={startDate || new Date().toISOString().split('T')[0]} onChange={e => setEndDate(e.target.value)} style={{ width: '100%', marginTop: '6px', marginBottom: '30px' }} />
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button onClick={() => setCheckoutOpen(false)} style={{ flex: 1, padding: '12px', background: 'transparent', color: '#5c1a33', border: '1px solid #5c1a33', fontSize: '13px', letterSpacing: '1px' }}>Cancel</button>
+              <button onClick={checkout} style={{ flex: 1, padding: '12px', background: '#5c1a33', color: 'white', fontSize: '13px', letterSpacing: '1px' }}>Confirm</button>
+            </div>
+          </div>
         </div>
       )}
     </div>

@@ -6,17 +6,18 @@ import { useLanguage } from '../context/LanguageContext'
 function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [error, setError] = useState('')
   const navigate = useNavigate()
   const { t } = useLanguage()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setError('')
     try {
-      const data = await authService.login(email, password)
-      localStorage.setItem('token', data.token)
-      navigate('/')
-    } catch (error) {
-      console.error('Login failed', error)
+      await authService.login(email, password)
+      navigate('/products')
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Invalid email or password.')
     }
   }
 
@@ -38,9 +39,15 @@ function Login() {
           onChange={(e) => setPassword(e.target.value)}
           required
         />
-        <button type="submit" style={{width: '100%'}}>{t('signIn')}</button>
+        {error && <p style={{ color: 'red', marginBottom: '15px', fontSize: '14px' }}>{error}</p>}
+        <button type="submit" style={{ width: '100%' }}>{t('signIn')}</button>
       </form>
-      <p style={{textAlign: 'center', marginTop: '30px', color: '#666'}}>{t('newCustomer')} <Link to="/register" style={{color: '#7d2e54', textDecoration: 'underline'}}>{t('createAnAccount')}</Link></p>
+      <p style={{ textAlign: 'center', marginTop: '30px', color: '#666' }}>
+        {t('newCustomer')}{' '}
+        <Link to="/register" style={{ color: '#7d2e54', textDecoration: 'underline' }}>
+          {t('createAnAccount')}
+        </Link>
+      </p>
     </div>
   )
 }

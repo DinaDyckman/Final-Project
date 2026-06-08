@@ -10,6 +10,7 @@ export interface Product {
   name: string
   category: string
   quantityAvailable: number
+  price:number
   imageUrl?: string
 }
 

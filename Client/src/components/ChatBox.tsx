@@ -1,4 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
+
+// @ts-ignore
 import '../styles/ChatBox.css'
 
 interface Message {
@@ -6,12 +8,15 @@ interface Message {
   isUser: boolean
 }
 
-function ChatBox() {
+function ChatBox({ cartOpen }: { cartOpen: boolean }) {
   const [isOpen, setIsOpen] = useState(false)
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+
+  // נשלוף את סוג האירוע שנשמר בבלוק ה-Continue, כדי להתאים את הודעת הפתיחה
+  const savedEventType = sessionStorage.getItem('eventType')
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
@@ -21,17 +26,29 @@ function ChatBox() {
     scrollToBottom()
   }, [messages])
 
+
+  useEffect(() => {
+    const handleOpenChat = () => {
+      setIsOpen(true)
+    }
+
+    window.addEventListener('openSimchaChat', handleOpenChat)
+    
+    return () => {
+      window.removeEventListener('openSimchaChat', handleOpenChat)
+    }
+  }, [])
+
   const sendMessage = async () => {
     if (!input.trim()) return
 
     const userMessage = { text: input, isUser: true }
     setMessages(prev => [...prev, userMessage])
-    const currentInput = input; 
+    const currentInput = input
     setInput('')
-    setLoading(true)
+    loading || setLoading(true)
 
     try {
-      // שליחת הבקשה לשרת
       const response = await fetch('http://localhost:5000/api/ai/consult', {
         method: 'POST',
         headers: { 
@@ -44,25 +61,16 @@ function ChatBox() {
       })
 
       if (!response.ok) {
-        throw new Error('Network response was not ok');
+        throw new Error('Network response was not ok')
       }
 
       const data = await response.json()
-      
-      // הדפסה לדיבאג בדפדפן (F12) כדי לוודא מה חוזר מהשרת
-      console.log("Server Response:", data);
-
-      // התיקון הקריטי: השרת שלך שולח שדה בשם aiResponse
-      // אנחנו משתמשים בו, ואם הוא ריק - נותנים תשובה מקצועית כגיבוי
-      const aiText = data.aiResponse || "As an upscale designer, I recommend focusing on elegant textures and a cohesive color palette.";
-      
+      console.log("Server Response:", data)
+      const aiText = data.aiResponse || "As an upscale designer, I recommend focusing on elegant textures and a cohesive color palette."
       setMessages(prev => [...prev, { text: aiText, isUser: false }])
     } catch (error) {
-      console.error("Chat Error:", error);
-      setMessages(prev => [...prev, { 
-        text: 'Sorry, I am having trouble connecting to my design database. Please try again in a moment.', 
-        isUser: false 
-      }])
+      console.error("Chat Error:", error)
+      setMessages(prev => [...prev, { text: 'Sorry, I am having trouble connecting. Please try again in a moment.', isUser: false }])
     } finally {
       setLoading(false)
     }
@@ -70,21 +78,25 @@ function ChatBox() {
 
   return (
     <>
-      {!isOpen && (
+      {!isOpen && !cartOpen && (
         <button className="help-button" onClick={() => setIsOpen(true)}>
-          💬 Need Help?
+          Need Help?
         </button>
       )}
 
       {isOpen && (
         <div className="chat-container">
           <div className="chat-header">
-            <h3>AI Assistant</h3>
+            <h3>Simcha Bot</h3>
             <button onClick={() => setIsOpen(false)}>✕</button>
           </div>
           <div className="chat-messages">
             {messages.length === 0 && (
-              <div className="message ai">Hi! I am your upscale event designer. How can I help you today?</div>
+              <div className="message ai">
+                {savedEventType
+                  ? `Hi! I see you are planning an ${savedEventType}. How can I help you plan your special day? ✨`
+                  : "Hi! I am your upscale event designer. How can I help you today?"}
+              </div>
             )}
             {messages.map((msg, i) => (
               <div key={i} className={`message ${msg.isUser ? 'user' : 'ai'}`}>
