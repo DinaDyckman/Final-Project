@@ -1,9 +1,12 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { productService } from '../services/productService'
 import { authService } from '../services/authService'
+import { cartService } from '../services/cartService'  // ✅ השירות החדש
+import api from '../services/api'
 import { Product, CartItem } from '../types'
 
+// 🌟 הנה האובייקט שהיה חסר וגרם למסך הלבן! החזרנו אותו למקום
 const CATEGORY_GROUPS: Record<string, string[]> = {
   'Event Furniture': ['Tables', 'Chairs', 'Sofas', 'Lounge Furniture'],
   'Decor': ['Centerpieces', 'Tablecloths', 'Lighting', 'Backdrops', 'Floral Arrangements'],
@@ -18,47 +21,80 @@ interface ProductsProps {
   isAuthenticated: boolean
   onMyAccountClick: () => void
   onLogout: () => void
+  userId?: string // הוספנו תמיכה ביוזר איידי מהאבא
 }
 
-function Products({ cartOpen, setCartOpen, isAuthenticated, onMyAccountClick, onLogout }: ProductsProps) {
+function Products({ cartOpen, setCartOpen, isAuthenticated, onMyAccountClick, onLogout, userId = 'guest' }: ProductsProps) {
   const [products, setProducts] = useState<Product[]>([])
   const [selectedCategories, setSelectedCategories] = useState<string[]>([])
-  const [cart, setCart] = useState<CartItem[]>([])
   const [quantities, setQuantities] = useState<Record<string, number>>({})
   const navigate = useNavigate()
   const [checkoutOpen, setCheckoutOpen] = useState(false)
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
   const [profileOpen, setProfileOpen] = useState(false)
+  const [cartLoading, setCartLoading] = useState(true)  // ✅ ניהול טעינת עגלה
   const [userName, setUserName] = useState<string>(() => {
     const user = authService.getCurrentUser()
     return user?.name || ''
   })
 
-  useEffect(() => {
-    const user = authService.getCurrentUser()
-    if (user?.name) setUserName(user.name)
-  }, [isAuthenticated])
+  const [cart, setCart] = useState<CartItem[]>([])
 
-  const handleLogout = () => {
+  // ✅ טעינת העגלה ישירות מה-Database בשרת
+  useEffect(() => {
+    const loadCart = async () => {
+      if (userId === 'guest' || !isAuthenticated) {
+        setCart([])
+        setCartLoading(false)
+        return
+      }
+      setCartLoading(true)
+      const dbCart = await cartService.getCart()
+      setCart(dbCart)
+      setCartLoading(false)
+    }
+    loadCart()
+  }, [userId, isAuthenticated])
+
+  // ✅ שמירת העגלה בשרת בכל שינוי עם Debounce של 500 מילישניות
+  const saveTimeout = useRef<ReturnType<typeof setTimeout> | null>(null)
+  useEffect(() => {
+    if (userId === 'guest' || !isAuthenticated || cartLoading) return
+    if (saveTimeout.current) clearTimeout(saveTimeout.current)
+    saveTimeout.current = setTimeout(() => {
+      cartService.saveCart(cart)
+    }, 500)
+    return () => {
+      if (saveTimeout.current) clearTimeout(saveTimeout.current)
+    }
+  }, [cart])
+
+  const handleLogout = async () => {
+    if (userId !== 'guest' && isAuthenticated) {
+      await cartService.saveCart(cart) // שמירה אחרונה לפני שיוצאים
+    }
     authService.logout()
     onLogout()
     setProfileOpen(false)
+    window.location.reload() // רענון נקי לדף
   }
+
+  useEffect(() => {
+    const user = authService.getCurrentUser()
+    if (user?.name) setUserName(user.name)
+    else setUserName('')
+  }, [isAuthenticated])
 
   const checkout = async () => {
     if (!startDate || !endDate) return alert('Please select both dates.')
     if (endDate <= startDate) return alert('End date must be after start date.')
-    const userId = localStorage.getItem('userId') || 'user_123'
     const items = cart.map(i => ({ productId: i.product._id, quantity: i.quantity }))
     try {
-      const res = await fetch('/api/rentals/checkout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId, items, startDate, endDate })
+      const { data } = await api.post('/rentals/checkout', {
+        userId, items, startDate, endDate
       })
-      if (!res.ok) throw new Error('Checkout failed')
-      const data = await res.json()
+      await cartService.clearCart() // ✅ ניקוי העגלה ב-DB אחרי צ'קאאוט
       setCart([])
       setCartOpen(false)
       setCheckoutOpen(false)
@@ -166,7 +202,7 @@ function Products({ cartOpen, setCartOpen, isAuthenticated, onMyAccountClick, on
                 My Account
               </button>
 
-              {/* Profile Dropdown - only when authenticated */}
+              {/* Profile Dropdown */}
               {isAuthenticated && profileOpen && (
                 <div style={{
                   position: 'absolute', top: 'calc(100% + 10px)', right: 0,
@@ -195,6 +231,29 @@ function Products({ cartOpen, setCartOpen, isAuthenticated, onMyAccountClick, on
                       onMouseLeave={e => e.currentTarget.style.color = '#bbb'}
                     >✕</button>
                   </div>
+
+                  {/* ⚙️ כפתור ה-Admin Panel החדש מוזרק כאן ויופיע רק למנהלים */}
+                  {authService.getCurrentUser()?.role === 'Admin' && (
+                    <button
+                      onClick={() => {
+                        navigate('/admin')
+                        setProfileOpen(false)
+                      }}
+                      style={{
+                        width: '100%', padding: '14px 20px', background: 'transparent',
+                        border: 'none', color: '#5c1a33', fontSize: '14px', letterSpacing: '1px',
+                        textAlign: 'left', cursor: 'pointer', textTransform: 'uppercase',
+                        transition: 'background 0.2s', borderBottom: '1px solid #f0f0f0',
+                        display: 'flex', alignItems: 'center', gap: '8px'
+                      }}
+                      onMouseEnter={e => e.currentTarget.style.background = '#faf7f5'}
+                      onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                    >
+                      <span></span> Admin Panel
+                    </button>
+                  )}
+
+                  {/* כפתור ה-Logout המקורי נמצא כאן מתחתיו */}
                   <button
                     onClick={handleLogout}
                     style={{
@@ -276,7 +335,9 @@ function Products({ cartOpen, setCartOpen, isAuthenticated, onMyAccountClick, on
                 <div style={{ padding: '16px' }}>
                   <h3 style={{ fontWeight: 400, fontSize: '1rem', color: '#5c1a33', marginBottom: '6px' }}>{product.name}</h3>
                   <p style={{ fontSize: '12px', color: '#999', letterSpacing: '1px', textTransform: 'uppercase', marginBottom: '4px' }}>{product.category}</p>
-                  <p style={{ fontSize: '13px', color: '#555', marginBottom: '14px' }}>Available: {product.quantityAvailable}</p>
+                  <p style={{ fontSize: '13px', color: '#555', marginBottom: '4px' }}>Available: {product.quantityAvailable}</p>
+                  {/* 🌟 הוספת המחיר המאובטח לתצוגה בכרטיס המוצר */}
+                  <p style={{ fontSize: '14px', fontWeight: '600', color: '#d4af37', marginBottom: '14px' }}>Price: ${product.price || 0}</p>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <input
                       type="number"
@@ -309,15 +370,17 @@ function Products({ cartOpen, setCartOpen, isAuthenticated, onMyAccountClick, on
             <button onClick={() => setCartOpen(false)} style={{ background: 'transparent', color: '#5c1a33', border: 'none', fontSize: '20px', padding: '0', cursor: 'pointer' }}>✕</button>
           </div>
           <div style={{ flex: 1, overflowY: 'auto', padding: '20px' }}>
-            {cart.length === 0 ? (
+            {cartLoading ? (
+              <p style={{ color: '#999', textAlign: 'center', marginTop: '40px' }}>Loading cart...</p>
+            ) : cart.length === 0 ? (
               <p style={{ color: '#999', textAlign: 'center', marginTop: '40px' }}>Your cart is empty</p>
             ) : cart.map(item => (
-              <div key={item.product._id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 0', borderBottom: '1px solid #f0f0f0' }}>
+              <div key={item.product?._id || Math.random()} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 0', borderBottom: '1px solid #f0f0f0' }}>
                 <div>
-                  <p style={{ fontWeight: 400, fontSize: '14px' }}>{item.product.name}</p>
+                  <p style={{ fontWeight: 400, fontSize: '14px' }}>{item.product?.name || 'Unknown Item'}</p>
                   <p style={{ fontSize: '12px', color: '#999' }}>Qty: {item.quantity}</p>
                 </div>
-                <button onClick={() => removeFromCart(item.product._id)} style={{ background: 'transparent', color: '#999', border: 'none', fontSize: '16px', padding: '0', cursor: 'pointer' }}>✕</button>
+                <button onClick={() => removeFromCart(item.product?._id)} style={{ background: 'transparent', color: '#999', border: 'none', fontSize: '16px', padding: '0', cursor: 'pointer' }}>✕</button>
               </div>
             ))}
           </div>

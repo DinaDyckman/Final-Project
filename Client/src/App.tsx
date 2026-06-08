@@ -3,34 +3,55 @@ import { useState } from 'react'
 import AuthPage from './pages/AuthPage'
 import Products from './pages/Products'
 import ThankYou from './pages/ThankYou'
+import AdminPanel from './pages/AdminPanel'  // ✅ NEW
 import ChatBox from './components/ChatBox'
 import AiPromoModal from './components/AiPromoModal'
 import { LanguageProvider } from './context/LanguageContext'
+import { authService } from './services/authService'
+
+authService.rehydrateSession()
 
 function App() {
   const [cartOpen, setCartOpen] = useState(false)
   const [showPromoModal, setShowPromoModal] = useState(true)
   const [showAuthModal, setShowAuthModal] = useState(false)
+  const [isChatForceOpen, setIsChatForceOpen] = useState(false)
+  const [mountKey, setMountKey] = useState(0)
 
   const getInitialAuthState = () => {
-    const token = localStorage.getItem('token') || sessionStorage.getItem('token')
+    const token = authService.getToken()
     return !!(token && token !== 'null' && token !== 'undefined' && token.length > 20)
   }
 
   const [isAuthenticated, setIsAuthenticated] = useState(getInitialAuthState)
 
+  const getCurrentUserId = () => {
+    const user = authService.getCurrentUser()
+    return user?.id || 'guest'
+  }
+
+  const [currentUserId, setCurrentUserId] = useState(getCurrentUserId)
+
   const refreshAuthState = () => {
-    const token = localStorage.getItem('token') || sessionStorage.getItem('token')
+    const token = authService.getToken()
     const isValid = !!(token && token !== 'null' && token !== 'undefined' && token.length > 20)
+    const newUserId = getCurrentUserId()
+    setCurrentUserId(newUserId)
     setIsAuthenticated(isValid)
-    if (isValid) setShowAuthModal(false)
+    setShowAuthModal(false)
+    setMountKey(prev => prev + 1)
   }
 
   const handleMyAccountClick = () => {
-    if (!isAuthenticated) {
-      setShowAuthModal(true)
-    } else {
-      // already handled inside Products via profileOpen dropdown
+    if (!isAuthenticated) setShowAuthModal(true)
+  }
+
+  const handlePromoClose = (eventData?: { type: string; date: string }) => {
+    setShowPromoModal(false)
+    setIsChatForceOpen(true)
+    if (eventData) {
+      sessionStorage.setItem('eventType', eventData.type)
+      sessionStorage.setItem('eventDate', eventData.date)
     }
   }
 
@@ -40,33 +61,49 @@ function App() {
     <LanguageProvider>
       <Router>
         <div style={{ position: 'relative', minHeight: '100vh' }}>
-          {/* Main layout - blurred when any modal is open */}
           <div style={{
             filter: isBlurred ? 'blur(7px)' : 'none',
             pointerEvents: isBlurred ? 'none' : 'auto',
             transition: 'filter 0.35s ease'
           }}>
             <Routes>
-              <Route path="/" element={<Products cartOpen={cartOpen} setCartOpen={setCartOpen} isAuthenticated={isAuthenticated} onMyAccountClick={handleMyAccountClick} onLogout={refreshAuthState} />} />
-              <Route path="/products" element={<Products cartOpen={cartOpen} setCartOpen={setCartOpen} isAuthenticated={isAuthenticated} onMyAccountClick={handleMyAccountClick} onLogout={refreshAuthState} />} />
+              <Route path="/" element={
+                <Products
+                  key={mountKey}
+                  userId={currentUserId}
+                  cartOpen={cartOpen}
+                  setCartOpen={setCartOpen}
+                  isAuthenticated={isAuthenticated}
+                  onMyAccountClick={handleMyAccountClick}
+                  onLogout={refreshAuthState}
+                />
+              } />
+              <Route path="/products" element={
+                <Products
+                  key={mountKey}
+                  userId={currentUserId}
+                  cartOpen={cartOpen}
+                  setCartOpen={setCartOpen}
+                  isAuthenticated={isAuthenticated}
+                  onMyAccountClick={handleMyAccountClick}
+                  onLogout={refreshAuthState}
+                />
+              } />
+              {/* ✅ NEW: Admin route */}
+              <Route path="/admin" element={<AdminPanel />} />
               <Route path="/thank-you" element={<ThankYou />} />
               <Route path="*" element={<Navigate to="/products" replace />} />
             </Routes>
           </div>
 
-          {/* Auth Modal - only shown when user clicks My Account while unauthenticated */}
           {showAuthModal && (
             <div
               style={{
-                position: 'fixed',
-                top: 0, left: 0, right: 0, bottom: 0,
+                position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
                 backgroundColor: 'rgba(0, 0, 0, 0.5)',
                 backdropFilter: 'blur(4px)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                zIndex: 999999,
-                animation: 'fadeIn 0.3s ease'
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                zIndex: 999999, animation: 'fadeIn 0.3s ease'
               }}
               onClick={(e) => { if (e.target === e.currentTarget) setShowAuthModal(false) }}
             >
@@ -76,12 +113,8 @@ function App() {
             </div>
           )}
 
-          {/* AI Promo Modal - shown on first load */}
-          {showPromoModal && (
-            <AiPromoModal onClose={() => setShowPromoModal(false)} />
-          )}
-
-          {isAuthenticated && <ChatBox cartOpen={cartOpen} />}
+          {showPromoModal && <AiPromoModal onClose={handlePromoClose} />}
+          <ChatBox cartOpen={cartOpen} />
         </div>
 
         <style>{`
