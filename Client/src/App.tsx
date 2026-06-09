@@ -3,13 +3,16 @@ import { useState, useEffect } from 'react'
 import AuthPage from './pages/AuthPage'
 import Products from './pages/Products'
 import ThankYou from './pages/ThankYou'
-import AdminPanel from './pages/AdminPanel'  
+import AdminPanel from './pages/AdminPanel'
 import ChatBox from './components/ChatBox'
 import AiPromoModal from './components/AiPromoModal'
 import AiPromoReminder from './components/AiPromoReminder'
 import { LanguageProvider } from './context/LanguageContext'
 import { authService } from './services/authService'
+import { cartService } from './services/cartService'
 import RentalHistory from './pages/rentalHistory'
+import Checkout from './pages/Checkout'
+import { CartItem } from './types'
 
 authService.rehydrateSession()
 
@@ -20,6 +23,10 @@ function App() {
   const [showAuthModal, setShowAuthModal] = useState(false)
   const [isChatForceOpen, setIsChatForceOpen] = useState(false)
   const [mountKey, setMountKey] = useState(0)
+
+  // ── Cart state lifted up so Products & Checkout share it ──
+  const [cart, setCart] = useState<CartItem[]>([])
+  const [cartLoading, setCartLoading] = useState(true)
 
   const getInitialAuthState = () => {
     const token = authService.getToken()
@@ -34,6 +41,22 @@ function App() {
   }
 
   const [currentUserId, setCurrentUserId] = useState(getCurrentUserId)
+
+  // ── Load cart from DB when user is known ──
+  useEffect(() => {
+    const loadCart = async () => {
+      if (currentUserId === 'guest' || !isAuthenticated) {
+        setCart([])
+        setCartLoading(false)
+        return
+      }
+      setCartLoading(true)
+      const dbCart = await cartService.getCart()
+      setCart(dbCart)
+      setCartLoading(false)
+    }
+    loadCart()
+  }, [currentUserId, isAuthenticated])
 
   useEffect(() => {
     const timer = setTimeout(() => setShowReminder(true), 10000)
@@ -79,6 +102,9 @@ function App() {
                 <Products
                   key={mountKey}
                   userId={currentUserId}
+                  cart={cart}
+                  setCart={setCart}
+                  cartLoading={cartLoading}
                   cartOpen={cartOpen}
                   setCartOpen={setCartOpen}
                   isAuthenticated={isAuthenticated}
@@ -90,6 +116,9 @@ function App() {
                 <Products
                   key={mountKey}
                   userId={currentUserId}
+                  cart={cart}
+                  setCart={setCart}
+                  cartLoading={cartLoading}
                   cartOpen={cartOpen}
                   setCartOpen={setCartOpen}
                   isAuthenticated={isAuthenticated}
@@ -97,7 +126,13 @@ function App() {
                   onLogout={refreshAuthState}
                 />
               } />
-              {/* ✅ NEW: Admin route */}
+              <Route path="/checkout" element={
+                <Checkout
+                  cart={cart}
+                  setCart={setCart}
+                  userId={currentUserId}
+                />
+              } />
               <Route path="/admin" element={<AdminPanel />} />
               <Route path="/rental-history" element={<RentalHistory />} />
               <Route path="/thank-you" element={<ThankYou />} />

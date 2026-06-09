@@ -262,7 +262,7 @@ function AdminPanel() {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '30px' }}>
             <div style={{ background: 'white', padding: '30px', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
               <h3 style={{ color: '#5c1a33', fontWeight: 400, letterSpacing: '1px', marginBottom: '24px' }}>
-                {editingProduct ? '✏️ Edit Product' : '➕ Add New Product'}
+                {editingProduct ? ' Edit Product' : '➕ Add New Product'}
               </h3>
               {productSuccess && <p style={{ color: '#10b981', background: '#f0fdf4', padding: '10px', borderRadius: '4px', marginBottom: '16px' }}>{productSuccess}</p>}
               {productError && <p style={{ color: '#ef4444', background: '#fef2f2', padding: '10px', borderRadius: '4px', marginBottom: '16px' }}>{productError}</p>}

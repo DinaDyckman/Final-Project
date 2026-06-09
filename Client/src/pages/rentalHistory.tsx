@@ -224,7 +224,7 @@ function RentalHistory() {
               <div style={styles.cardHeader}>
                 <div>
                   <span style={{ ...styles.badge, color: sc.color, background: sc.bg }}>
-                    {sc.icon} {sc.label}
+                     {sc.label}
                   </span>
                   <p style={{ fontSize: '11px', color: '#bbb', marginTop: '8px', fontFamily: 'monospace' }}>
                     Order #{rental._id}
