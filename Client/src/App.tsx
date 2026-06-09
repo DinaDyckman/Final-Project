@@ -7,6 +7,7 @@ import AdminPanel from './pages/AdminPanel'
 import ChatBox from './components/ChatBox'
 import AiPromoModal from './components/AiPromoModal'
 import AiPromoReminder from './components/AiPromoReminder'
+import Footer from './components/Footer'
 import { LanguageProvider } from './context/LanguageContext'
 import { authService } from './services/authService'
 import { cartService } from './services/cartService'
@@ -24,7 +25,6 @@ function App() {
   const [isChatForceOpen, setIsChatForceOpen] = useState(false)
   const [mountKey, setMountKey] = useState(0)
 
-  // ── Cart state lifted up so Products & Checkout share it ──
   const [cart, setCart] = useState<CartItem[]>([])
   const [cartLoading, setCartLoading] = useState(true)
 
@@ -42,7 +42,6 @@ function App() {
 
   const [currentUserId, setCurrentUserId] = useState(getCurrentUserId)
 
-  // ── Load cart from DB when user is known ──
   useEffect(() => {
     const loadCart = async () => {
       if (currentUserId === 'guest' || !isAuthenticated) {
@@ -91,11 +90,18 @@ function App() {
   return (
     <LanguageProvider>
       <Router>
-        <div style={{ position: 'relative', minHeight: '100vh' }}>
+        {/*
+          Outer shell: flex column so the Footer is always pushed to the
+          bottom and the main content expands to fill the remaining space.
+        */}
+        <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', position: 'relative' }}>
+
+          {/* ── Blurrable content area ── */}
           <div style={{
+            flex: 1,
             filter: isBlurred ? 'blur(7px)' : 'none',
             pointerEvents: isBlurred ? 'none' : 'auto',
-            transition: 'filter 0.35s ease'
+            transition: 'filter 0.35s ease',
           }}>
             <Routes>
               <Route path="/" element={
@@ -140,6 +146,14 @@ function App() {
             </Routes>
           </div>
 
+          {/*
+            Footer lives OUTSIDE the blurred div so it is never blurred by
+            the modal overlay, but INSIDE the Router so useLocation() works.
+            It hides itself on /admin and /thank-you via its own hook.
+          */}
+          <Footer />
+
+          {/* ── Auth modal overlay ── */}
           {showAuthModal && (
             <div
               style={{
@@ -147,7 +161,7 @@ function App() {
                 backgroundColor: 'rgba(0, 0, 0, 0.5)',
                 backdropFilter: 'blur(4px)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                zIndex: 999999, animation: 'fadeIn 0.3s ease'
+                zIndex: 999999, animation: 'fadeIn 0.3s ease',
               }}
               onClick={(e) => { if (e.target === e.currentTarget) setShowAuthModal(false) }}
             >
@@ -166,7 +180,7 @@ function App() {
           @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
           @keyframes modalSlideIn {
             from { opacity: 0; transform: scale(0.85) translateY(-40px); }
-            to { opacity: 1; transform: scale(1) translateY(0); }
+            to   { opacity: 1; transform: scale(1)    translateY(0);     }
           }
         `}</style>
       </Router>
