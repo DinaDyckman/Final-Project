@@ -9,15 +9,10 @@ function AiPromoModal({ onClose }: AiPromoModalProps) {
   const [eventDate, setEventDate] = useState('2026-06-21')
 
   const handleContinue = () => {
-    // 1. שומרים את הנתונים ב-sessionStorage כדי שהצ'אט בוט יוכל לגשת אליהם בהמשך
     sessionStorage.setItem('eventType', eventType)
     sessionStorage.setItem('eventDate', eventDate)
-
-    // 2. מייצרים אירוע מותאם אישית שמודיע לצ'אט להיפתח
     const openChatEvent = new CustomEvent('openSimchaChat')
     window.dispatchEvent(openChatEvent)
-
-    // 3. סוגרים את המודל
     onClose({ type: eventType, date: eventDate })
   }
 
@@ -26,182 +21,153 @@ function AiPromoModal({ onClose }: AiPromoModalProps) {
       position: 'fixed', inset: 0,
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       zIndex: 999999,
-      backgroundColor: 'rgba(0, 0, 0, 0.3)',
       animation: 'fadeIn 0.4s ease'
     }}>
       <div style={{
         background: '#fff',
         width: '100%',
-        maxWidth: '540px',
-        borderRadius: '24px',
-        boxShadow: '0 20px 50px rgba(0, 0, 0, 0.15)',
+        maxWidth: '520px',
+        borderRadius: '4px',
+        boxShadow: '0 30px 80px rgba(92, 26, 51, 0.35)',
         overflow: 'hidden',
         animation: 'modalSlideIn 0.45s ease-out',
-        position: 'relative',
-        fontFamily: "'Segoe UI', Roboto, Helvetica, Arial, sans-serif"
+        position: 'relative'
       }}>
 
-        {/* Top burgundy header section */}
+        {/* X Button */}
+        <button
+          onClick={() => onClose()}
+          style={{
+            position: 'absolute', top: '14px', right: '16px',
+            background: 'transparent', border: 'none',
+            color: 'rgba(255,255,255,0.75)', fontSize: '20px',
+            cursor: 'pointer', zIndex: 2, lineHeight: 1,
+            transition: 'color 0.2s'
+          }}
+          onMouseEnter={e => e.currentTarget.style.color = '#fff'}
+          onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.75)'}
+        >✕</button>
+
+        {/* Top gradient header */}
         <div style={{
-          background: '#73183a',
-          padding: '28px 32px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '12px',
-          position: 'relative'
+          background: 'linear-gradient(140deg, #5c1a33 0%, #7d2e54 60%, #5c1a33 100%)',
+          padding: '44px 40px 36px',
+          textAlign: 'center',
+          position: 'relative',
+          overflow: 'hidden'
         }}>
-          <span style={{ fontSize: '24px', color: '#fff', display: 'flex', alignItems: 'center' }}>
-        
-          </span>
+          {/* Decorative rings */}
+          <div style={{ position: 'absolute', top: '-50px', left: '-50px', width: '160px', height: '160px', borderRadius: '50%', border: '1px solid rgba(212,175,55,0.2)' }} />
+          <div style={{ position: 'absolute', bottom: '-30px', right: '-30px', width: '120px', height: '120px', borderRadius: '50%', border: '1px solid rgba(212,175,55,0.15)' }} />
+          <div style={{ position: 'absolute', top: '-20px', right: '60px', width: '80px', height: '80px', borderRadius: '50%', border: '1px solid rgba(212,175,55,0.1)' }} />
+
+          {/* Badge */}
+          <div style={{
+            display: 'inline-block',
+            border: '1px solid rgba(212,175,55,0.5)',
+            color: '#d4af37', fontSize: '10px', letterSpacing: '3px',
+            textTransform: 'uppercase', padding: '4px 14px', borderRadius: '20px',
+            marginBottom: '18px', position: 'relative', zIndex: 1
+          }}>AI Event Assistant</div>
+
           <h2 style={{
-            color: '#fff',
-            fontSize: '1.5rem',
-            fontWeight: '700',
-            margin: 0,
-            letterSpacing: '-0.3px'
-          }}>
-            Hi, I'm the Simcha Bot!
-          </h2>
+            color: '#d4af37', fontSize: '1.9rem', fontWeight: '300',
+            letterSpacing: '3px', margin: '0 0 10px',
+            fontFamily: "'Segoe UI', sans-serif", position: 'relative', zIndex: 1
+          }}>Hi, I'm the Simcha Bot!</h2>
+
+          <p style={{
+            color: 'rgba(255,255,255,0.65)', fontSize: '12px',
+            letterSpacing: '2px', textTransform: 'uppercase',
+            margin: 0, position: 'relative', zIndex: 1
+          }}>Upscale Simcha Rental</p>
         </div>
 
-        {/* Content section */}
-        <div style={{ padding: '36px 36px 24px' }}>
-          <p style={{
-            color: '#666',
-            fontSize: '17px',
-            lineHeight: '1.5',
-            fontWeight: '400',
-            margin: '0 0 28px',
-            textAlign: 'left'
-          }}>
-            Help us personalize your experience! Share your event details so we can show you real-time product availability.
+        {/* Bottom content */}
+        <div style={{ padding: '34px 40px 38px' }}>
+
+          {/* Diamond divider */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
+            <div style={{ flex: 1, height: '1px', background: '#e8e8e8' }} />
+            <div style={{ width: '6px', height: '6px', background: '#d4af37', transform: 'rotate(45deg)' }} />
+            <div style={{ flex: 1, height: '1px', background: '#e8e8e8' }} />
+          </div>
+
+          <p style={{ color: '#555', fontSize: '15px', lineHeight: '1.7', fontWeight: '300', marginBottom: '24px', letterSpacing: '0.3px' }}>
+            Help us personalize your experience! Share your event details so our intelligent assistant can tailor suggestions to your vision and budget.
           </p>
 
+          {/* Feature pills */}
+          <div style={{ display: 'flex', justifyContent: 'center', gap: '10px', flexWrap: 'wrap', marginBottom: '28px' }}>
+            {['Personalized Suggestions', 'Budget Planning', 'Available 24/7'].map(label => (
+              <span key={label} style={{
+                background: '#faf7f5', border: '1px solid #e8e0da',
+                color: '#7d2e54', fontSize: '12px', letterSpacing: '0.5px',
+                padding: '6px 14px', borderRadius: '20px'
+              }}>{label}</span>
+            ))}
+          </div>
+
           {/* Form fields */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', textAlign: 'left' }}>
-            
-            {/* Field 1: Type of Event */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', textAlign: 'left', marginBottom: '28px' }}>
             <div>
-              <label style={{
-                display: 'block',
-                fontSize: '11px',
-                fontWeight: '700',
-                color: '#666',
-                textTransform: 'uppercase',
-                letterSpacing: '0.5px',
-                marginBottom: '8px'
-              }}>
+              <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: '#999', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>
                 Type of Event
               </label>
-              <select 
+              <select
                 value={eventType}
-                onChange={(e) => setEventType(e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '14px 16px',
-                  borderRadius: '12px',
-                  border: '1px solid #ccc',
-                  fontSize: '15px',
-                  color: '#333',
-                  backgroundColor: '#fff',
-                  outline: 'none',
-                  cursor: 'pointer'
-                }}
+                onChange={e => setEventType(e.target.value)}
+                style={{ width: '100%', padding: '12px 16px', borderRadius: '4px', border: '1px solid #e8e8e8', fontSize: '14px', color: '#333', backgroundColor: '#fff', outline: 'none', cursor: 'pointer' }}
               >
                 <option value="Anniversary">Anniversary</option>
                 <option value="Wedding">Wedding</option>
                 <option value="Bar Mitzvah">Bar Mitzvah</option>
                 <option value="Bat Mitzvah">Bat Mitzvah</option>
+                <option value="Bris">Bris</option>
+                <option value="Birthday">Birthday</option>
+                <option value="Corporate Event">Corporate Event</option>
                 <option value="Custom Event">Other Special Event</option>
               </select>
             </div>
-
-            {/* Field 2: Event Date */}
             <div>
-              <label style={{
-                display: 'block',
-                fontSize: '11px',
-                fontWeight: '700',
-                color: '#666',
-                textTransform: 'uppercase',
-                letterSpacing: '0.5px',
-                marginBottom: '8px'
-              }}>
+              <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: '#999', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>
                 Event Date
               </label>
-              <input 
+              <input
                 type="date"
                 value={eventDate}
-                onChange={(e) => setEventDate(e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '12px 16px',
-                  borderRadius: '12px',
-                  border: '1px solid #ccc',
-                  fontSize: '15px',
-                  color: '#333',
-                  outline: 'none',
-                  fontFamily: 'inherit'
-                }}
+                onChange={e => setEventDate(e.target.value)}
+                style={{ width: '100%', padding: '12px 16px', borderRadius: '4px', border: '1px solid #e8e8e8', fontSize: '14px', color: '#333', outline: 'none', fontFamily: 'inherit', marginBottom: 0 }}
               />
             </div>
+          </div>
 
+          {/* Actions */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <p style={{ fontSize: '12px', color: '#bbb', letterSpacing: '0.5px', cursor: 'pointer', margin: 0, transition: 'color 0.2s' }}
+              onClick={() => onClose()}
+              onMouseEnter={e => (e.currentTarget.style.color = '#7d2e54')}
+              onMouseLeave={e => (e.currentTarget.style.color = '#bbb')}
+            >Skip for now →</p>
+
+            <button
+              onClick={handleContinue}
+              style={{
+                background: 'linear-gradient(135deg, #5c1a33, #7d2e54)',
+                color: '#fff', border: 'none',
+                padding: '12px 32px', borderRadius: '4px',
+                fontSize: '13px', fontWeight: '600', letterSpacing: '1px',
+                textTransform: 'uppercase', cursor: 'pointer',
+                boxShadow: '0 4px 15px rgba(92,26,51,0.3)',
+                transition: 'transform 0.1s, box-shadow 0.2s'
+              }}
+              onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 6px 20px rgba(92,26,51,0.4)'; e.currentTarget.style.transform = 'translateY(-1px)' }}
+              onMouseLeave={e => { e.currentTarget.style.boxShadow = '0 4px 15px rgba(92,26,51,0.3)'; e.currentTarget.style.transform = 'translateY(0)' }}
+            >
+              Chat with Simcha Bot ✨
+            </button>
           </div>
         </div>
-
-        {/* Divider line */}
-        <div style={{ height: '1px', background: '#f0f0f0', margin: '0 36px' }} />
-
-        {/* Bottom Actions section */}
-        <div style={{
-          padding: '24px 36px 32px',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          gap: '20px'
-        }}>
-          <button
-            onClick={() => onClose()}
-            style={{
-              background: 'transparent',
-              border: 'none',
-              color: '#666',
-              fontSize: '14px',
-              fontWeight: '600',
-              cursor: 'pointer',
-              padding: '10px 0',
-              transition: 'color 0.2s'
-            }}
-            onMouseEnter={e => (e.currentTarget.style.color = '#333')}
-            onMouseLeave={e => (e.currentTarget.style.color = '#666')}
-          >
-            Skip for now
-          </button>
-
-          <button
-            onClick={handleContinue}
-            style={{
-              marginLeft: 'auto',
-              background: '#73183a',
-              color: '#fff',
-              border: 'none',
-              padding: '12px 32px',
-              borderRadius: '12px',
-              fontSize: '15px',
-              fontWeight: '600',
-              cursor: 'pointer',
-              boxShadow: '0 4px 12px rgba(115, 24, 58, 0.2)',
-              transition: 'background 0.2s, transform 0.1s'
-            }}
-            onMouseEnter={e => (e.currentTarget.style.background = '#5c132e')}
-            onMouseLeave={e => (e.currentTarget.style.background = '#73183a')}
-            onMouseDown={e => (e.currentTarget.style.transform = 'scale(0.98)')}
-            onMouseUp={e => (e.currentTarget.style.transform = 'scale(1)')}
-          >
-            Continue
-          </button>
-        </div>
-
       </div>
     </div>
   )

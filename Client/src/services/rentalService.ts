@@ -14,4 +14,3 @@ export const createRental = async (rentalData: any) => {
     }
 };
 
-// תוכלי להוסיף כאן בהמשך פונקציות נוספות כמו גט השכרות למשתמש

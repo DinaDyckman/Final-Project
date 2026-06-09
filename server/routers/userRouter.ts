@@ -32,7 +32,6 @@ router.post('/login', async (req: Request, res: Response, next: NextFunction) =>
         const isPasswordMatch = await bcrypt.compare(password, user.password);
         if (!isPasswordMatch) return res.status(401).json({ success: false, message: 'אימייל או סיסמה שגויים' });
 
-        // Generate token immediately for login
         const token = jwt.sign(
             { id: user._id, email: user.email, role: user.role },
             JWT_SECRET,
@@ -88,5 +87,20 @@ router.post('/verify-code', async (req: Request, res: Response, next: NextFuncti
         next(error);
     }
 });
+
+// --- Contact Us ---
+router.post('/contact', async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const { name, email, phone, message } = req.body
+        if (!name || !email || !message) return res.status(400).json({ success: false, message: 'Missing required fields' })
+
+        const { sendContactEmail } = await import('../services/emailService')
+        await sendContactEmail({ name, email, phone, message })
+
+        res.status(200).json({ success: true })
+    } catch (error) {
+        next(error)
+    }
+})
 
 export default router;

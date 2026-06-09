@@ -13,6 +13,8 @@ import { authService } from './services/authService'
 import { cartService } from './services/cartService'
 import RentalHistory from './pages/rentalHistory'
 import Checkout from './pages/Checkout'
+import InspirationGallery from './pages/InspirationGallery'
+import ContactUs from './pages/ContactUs'
 import { CartItem } from './types'
 
 authService.rehydrateSession()
@@ -58,6 +60,7 @@ function App() {
   }, [currentUserId, isAuthenticated])
 
   useEffect(() => {
+
     const timer = setTimeout(() => setShowReminder(true), 10000)
     return () => clearTimeout(timer)
   }, [])
@@ -139,6 +142,8 @@ function App() {
                   userId={currentUserId}
                 />
               } />
+              <Route path="/contact" element={<ContactUs />} />
+              <Route path="/inspiration-gallery" element={<InspirationGallery />} />
               <Route path="/admin" element={<AdminPanel />} />
               <Route path="/rental-history" element={<RentalHistory />} />
               <Route path="/thank-you" element={<ThankYou />} />

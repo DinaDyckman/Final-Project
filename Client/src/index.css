@@ -76,10 +76,27 @@ body {
   font-size: 14px;
   letter-spacing: 1px;
   transition: color 0.3s;
+  position: relative;
+  padding-bottom: 4px;
+}
+
+.nav-links a::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background-color: #5c1a33;
+  transition: width 0.3s ease;
 }
 
 .nav-links a:hover {
-  color: #d4af37;
+  color: white;
+}
+
+.nav-links a:hover::after {
+  width: 100%;
 }
 
 .lang-btn {
