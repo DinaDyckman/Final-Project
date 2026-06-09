@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { authService } from '../services/authService'
 import { productService } from '../services/productService'
@@ -24,8 +24,11 @@ function AdminPanel() {
   const [products, setProducts] = useState<Product[]>([])
   const [rentals, setRentals] = useState<Rental[]>([])
   const [loading, setLoading] = useState(true)
+  const [rentalsError, setRentalsError] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
+  // Track which rental IDs are currently being processed (for loading state on button)
+  const [returningIds, setReturningIds] = useState<Set<string>>(new Set())
 
   // Product form state
   const [editingProduct, setEditingProduct] = useState<Product | null>(null)
@@ -35,49 +38,51 @@ function AdminPanel() {
   const [productError, setProductError] = useState('')
   const [productSuccess, setProductSuccess] = useState('')
 
-  // Guard: redirect if not admin
-  useEffect(() => {
-    const user = authService.getCurrentUser()
-    if (!user || user.role !== 'Admin') {
-      navigate('/products')
+  const loadData = useCallback(async () => {
+    setLoading(true)
+    setRentalsError('')
+    try {
+      const [prods, rentalsRes] = await Promise.all([
+        productService.getAll(),
+        api.get('/rentals/all')
+      ])
+      setProducts(prods)
+      setRentals(rentalsRes.data || [])
+    } catch (err: any) {
+      console.error('Failed to load admin data:', err)
+      const status = err?.response?.status
+      const msg = err?.response?.data?.message || err.message
+      setRentalsError(`Failed to load rentals (${status}): ${msg}`)
+    } finally {
+      setLoading(false)
     }
   }, [])
 
-  // Load data
   useEffect(() => {
-    const loadData = async () => {
-      setLoading(true)
-      try {
-        const [prods, rents] = await Promise.all([
-          productService.getAll(),
-          api.get('/rentals/all').then(r => r.data)
-        ])
-        setProducts(prods)
-        setRentals(rents)
-      } catch (err) {
-        console.error('Failed to load admin data:', err)
-      } finally {
-        setLoading(false)
-      }
-    }
+    authService.rehydrateSession()
+    const user = authService.getCurrentUser()
+    if (!user) { navigate('/products'); return }
+    if (user.role?.toLowerCase() !== 'admin') { navigate('/products'); return }
     loadData()
-  }, [])
+  }, [navigate, loadData])
 
   // ── Dashboard stats ──────────────────────────────
-  const totalRevenue = rentals.reduce((sum, r) => sum + r.totalPrice, 0)
+  const totalRevenue = rentals.reduce((sum, r) => sum + (r.totalPrice || 0), 0)
   const totalRentals = rentals.length
   const pendingRentals = rentals.filter(r => r.status === 'pending').length
 
   const productRentCount: Record<string, { name: string; count: number }> = {}
   rentals.forEach(r => {
-    r.items.forEach(item => {
-      const id = item.productId?._id
-      const name = item.productId?.name || 'Unknown'
-      if (id) {
-        if (!productRentCount[id]) productRentCount[id] = { name, count: 0 }
-        productRentCount[id].count += item.quantity
-      }
-    })
+    if (r.items && Array.isArray(r.items)) {
+      r.items.forEach(item => {
+        const id = item.productId?._id
+        const name = item.productId?.name || 'Unknown Product'
+        if (id) {
+          if (!productRentCount[id]) productRentCount[id] = { name, count: 0 }
+          productRentCount[id].count += item.quantity || 0
+        }
+      })
+    }
   })
   const topProduct = Object.values(productRentCount).sort((a, b) => b.count - a.count)[0]
 
@@ -89,11 +94,11 @@ function AdminPanel() {
     try {
       if (editingProduct) {
         await productService.update(editingProduct._id, productForm)
-        setProductSuccess('Product updated successfully! ✅')
+        setProductSuccess('Product updated successfully!')
         setProducts(prev => prev.map(p => p._id === editingProduct._id ? { ...p, ...productForm } : p))
       } else {
         const newProduct = await productService.create(productForm)
-        setProductSuccess('Product added successfully! ✅')
+        setProductSuccess('Product added successfully!')
         setProducts(prev => [...prev, newProduct])
       }
       setProductForm({ name: '', category: '', quantityAvailable: 0, price: 0, imageUrl: '' })
@@ -121,7 +126,7 @@ function AdminPanel() {
     try {
       await productService.delete(id)
       setProducts(prev => prev.filter(p => p._id !== id))
-    } catch (err) {
+    } catch {
       alert('Failed to delete product.')
     }
   }
@@ -136,10 +141,42 @@ function AdminPanel() {
     }
   }
 
+  // ── NEW: Mark as Returned handler ────────────────
+  // Calls PATCH /api/rentals/:id/return which:
+  //   1. Sets rental status → 'completed'
+  //   2. Loops through items and restores each product's quantityAvailable in DB
+  const handleMarkReturned = async (rentalId: string) => {
+    const confirmed = window.confirm(
+      'Mark this rental as returned?\n\nThis will set the status to "Completed" and restore the product inventory.'
+    )
+    if (!confirmed) return
+
+    setReturningIds(prev => new Set(prev).add(rentalId))
+    try {
+      await api.patch(`/rentals/${rentalId}/return`)
+      // Instantly update UI — no need to refetch
+      setRentals(prev =>
+        prev.map(r => r._id === rentalId ? { ...r, status: 'completed' } : r)
+      )
+      alert('✅ Rental marked as returned. Inventory has been restored.')
+    } catch (err: any) {
+      const msg = err?.response?.data?.message || 'Failed to mark as returned.'
+      alert(`❌ Error: ${msg}`)
+    } finally {
+      setReturningIds(prev => {
+        const next = new Set(prev)
+        next.delete(rentalId)
+        return next
+      })
+    }
+  }
+
   const filteredRentals = rentals.filter(r => {
     const matchesStatus = statusFilter === 'all' || r.status === statusFilter
-    const matchesSearch = r.userId.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      r.items.some(i => i.productId?.name?.toLowerCase().includes(searchQuery.toLowerCase()))
+    const matchesSearch =
+      (r._id && r._id.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (r.userId && typeof r.userId === 'string' && r.userId.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (r.items && Array.isArray(r.items) && r.items.some(i => i.productId && i.productId.name && i.productId.name.toLowerCase().includes(searchQuery.toLowerCase())))
     return matchesStatus && matchesSearch
   })
 
@@ -197,24 +234,19 @@ function AdminPanel() {
         {activeTab === 'dashboard' && (
           <div>
             <h2 style={{ color: '#5c1a33', fontWeight: 300, letterSpacing: '2px', marginBottom: '24px' }}>Overview</h2>
-
-            {/* Stats cards */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '20px', marginBottom: '40px' }}>
               {[
-                { label: 'Total Rentals', value: totalRentals, icon: '📋', color: '#5c1a33' },
-                { label: 'Total Revenue', value: `₪${totalRevenue.toLocaleString()}`, icon: '💰', color: '#10b981' },
-                { label: 'Pending Orders', value: pendingRentals, icon: '⏳', color: '#f59e0b' },
-                { label: 'Total Products', value: products.length, icon: '📦', color: '#3b82f6' },
+                { label: 'Total Rentals', value: totalRentals, color: '#5c1a33' },
+                { label: 'Total Revenue', value: `₪${totalRevenue.toLocaleString()}`, color: '#10b981' },
+                { label: 'Pending Orders', value: pendingRentals, color: '#f59e0b' },
+                { label: 'Total Products', value: products.length, color: '#3b82f6' },
               ].map(stat => (
                 <div key={stat.label} style={{ background: 'white', padding: '24px', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', borderLeft: `4px solid ${stat.color}` }}>
-                  <div style={{ fontSize: '28px', marginBottom: '8px' }}>{stat.icon}</div>
                   <div style={{ fontSize: '28px', fontWeight: '600', color: stat.color }}>{stat.value}</div>
-                  <div style={{ fontSize: '13px', color: '#999', letterSpacing: '1px', textTransform: 'uppercase' }}>{stat.label}</div>
+                  <div style={{ fontSize: '13px', color: '#999', letterSpacing: '1px', textTransform: 'uppercase', marginTop: '4px' }}>{stat.label}</div>
                 </div>
               ))}
             </div>
-
-            {/* Top product */}
             {topProduct && (
               <div style={{ background: 'white', padding: '24px', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', maxWidth: '400px' }}>
                 <h3 style={{ color: '#5c1a33', fontWeight: 400, marginBottom: '12px' }}>🏆 Most Rented Product</h3>
@@ -228,16 +260,12 @@ function AdminPanel() {
         {/* ── PRODUCTS TAB ── */}
         {activeTab === 'products' && (
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '30px' }}>
-
-            {/* Product form */}
             <div style={{ background: 'white', padding: '30px', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
               <h3 style={{ color: '#5c1a33', fontWeight: 400, letterSpacing: '1px', marginBottom: '24px' }}>
-                {editingProduct ? '✏️ Edit Product' : '➕ Add New Product'}
+                {editingProduct ? ' Edit Product' : '➕ Add New Product'}
               </h3>
-
               {productSuccess && <p style={{ color: '#10b981', background: '#f0fdf4', padding: '10px', borderRadius: '4px', marginBottom: '16px' }}>{productSuccess}</p>}
               {productError && <p style={{ color: '#ef4444', background: '#fef2f2', padding: '10px', borderRadius: '4px', marginBottom: '16px' }}>{productError}</p>}
-
               <form onSubmit={handleProductSubmit}>
                 {[
                   { label: 'Product Name', key: 'name', type: 'text' },
@@ -257,7 +285,6 @@ function AdminPanel() {
                     />
                   </div>
                 ))}
-
                 <div style={{ display: 'flex', gap: '10px' }}>
                   <button type="submit" style={{ flex: 1, padding: '12px', background: '#5c1a33', color: 'white', border: 'none', cursor: 'pointer', fontSize: '14px', letterSpacing: '1px' }}>
                     {editingProduct ? 'Update Product' : 'Add Product'}
@@ -272,7 +299,6 @@ function AdminPanel() {
               </form>
             </div>
 
-            {/* Product list */}
             <div style={{ background: 'white', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', overflow: 'hidden' }}>
               <div style={{ padding: '20px 24px', borderBottom: '1px solid #f0f0f0' }}>
                 <h3 style={{ color: '#5c1a33', fontWeight: 400, letterSpacing: '1px' }}>All Products ({products.length})</h3>
@@ -307,11 +333,16 @@ function AdminPanel() {
         {/* ── RENTALS TAB ── */}
         {activeTab === 'rentals' && (
           <div>
-            {/* Filters */}
+            {rentalsError && (
+              <div style={{ background: '#fef2f2', color: '#ef4444', padding: '12px 16px', borderRadius: '6px', marginBottom: '16px', fontSize: '14px' }}>
+                ⚠️ {rentalsError}
+              </div>
+            )}
+
             <div style={{ display: 'flex', gap: '16px', marginBottom: '24px' }}>
               <input
                 type="text"
-                placeholder="Search by user ID or product name..."
+                placeholder="Search by user ID, order ID or product name..."
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
                 style={{ flex: 1, padding: '10px 16px', border: '1px solid #e8e8e8', borderRadius: '4px', fontSize: '14px' }}
@@ -328,7 +359,6 @@ function AdminPanel() {
               </select>
             </div>
 
-            {/* Rentals list */}
             <div style={{ background: 'white', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', overflow: 'hidden' }}>
               <div style={{ padding: '20px 24px', borderBottom: '1px solid #f0f0f0' }}>
                 <h3 style={{ color: '#5c1a33', fontWeight: 400, letterSpacing: '1px' }}>
@@ -342,28 +372,56 @@ function AdminPanel() {
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
                     <div>
                       <p style={{ fontSize: '12px', color: '#999', marginBottom: '4px' }}>Order ID: {rental._id}</p>
-                      <p style={{ fontSize: '13px', color: '#666' }}>User: {rental.userId}</p>
+                      <p style={{ fontSize: '13px', color: '#666' }}>User: {rental.userId || 'Unknown'}</p>
                       <p style={{ fontSize: '13px', color: '#666' }}>
-                        {new Date(rental.startDate).toLocaleDateString('he-IL')} → {new Date(rental.endDate).toLocaleDateString('he-IL')}
+                        {rental.startDate ? new Date(rental.startDate).toLocaleDateString('he-IL') : ''} → {rental.endDate ? new Date(rental.endDate).toLocaleDateString('he-IL') : ''}
                       </p>
                     </div>
-                    <div style={{ textAlign: 'right' }}>
-                      <p style={{ fontSize: '18px', fontWeight: '600', color: '#5c1a33', marginBottom: '8px' }}>₪{rental.totalPrice.toLocaleString()}</p>
+
+                    {/* ── RIGHT SIDE: price + status dropdown + Mark Returned button ── */}
+                    <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px' }}>
+                      <p style={{ fontSize: '18px', fontWeight: '600', color: '#5c1a33', margin: 0 }}>
+                        ₪{(rental.totalPrice || 0).toLocaleString()}
+                      </p>
+
                       <select
                         value={rental.status}
                         onChange={e => handleStatusChange(rental._id, e.target.value)}
                         style={{ padding: '6px 12px', border: `1px solid ${statusColor(rental.status)}`, borderRadius: '4px', color: statusColor(rental.status), fontSize: '13px', cursor: 'pointer' }}
                       >
-                        <option value="pending">⏳ Pending</option>
-                        <option value="confirmed">✅ Confirmed</option>
-                        <option value="completed">🏁 Completed</option>
+                        <option value="pending"> Pending</option>
+                        <option value="confirmed"> Confirmed</option>
+                        <option value="completed"> Completed</option>
                       </select>
+
+                      {/* ── NEW: Mark Returned button — only shown when NOT yet completed ── */}
+                      {rental.status !== 'completed' && (
+                        <button
+                          onClick={() => handleMarkReturned(rental._id)}
+                          disabled={returningIds.has(rental._id)}
+                          style={{
+                            padding: '6px 14px',
+                            background: returningIds.has(rental._id) ? '#e8e8e8' : '#10b981',
+                            color: returningIds.has(rental._id) ? '#999' : 'white',
+                            border: 'none',
+                            borderRadius: '4px',
+                            cursor: returningIds.has(rental._id) ? 'not-allowed' : 'pointer',
+                            fontSize: '12px',
+                            letterSpacing: '0.5px',
+                            fontWeight: 500,
+                            transition: 'background 0.2s'
+                          }}
+                        >
+                          {returningIds.has(rental._id) ? 'Processing...' : '↩ Mark Returned'}
+                        </button>
+                      )}
                     </div>
                   </div>
+
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                    {rental.items.map((item, i) => (
+                    {rental.items && Array.isArray(rental.items) && rental.items.map((item, i) => (
                       <span key={i} style={{ background: '#faf7f5', border: '1px solid #e8e8e8', padding: '4px 10px', borderRadius: '20px', fontSize: '12px', color: '#666' }}>
-                        {item.productId?.name || 'Unknown'} × {item.quantity}
+                        {item.productId?.name || 'Unknown Product'} × {item.quantity || 0}
                       </span>
                     ))}
                   </div>
