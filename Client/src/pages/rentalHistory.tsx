@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { authService } from '../services/authService'
+import { cartService } from '../services/cartService'
 import api from '../services/api'
+
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 type RentalProduct = {
@@ -10,6 +12,7 @@ type RentalProduct = {
   imageUrl?: string
   price: number
   category: string
+  quantityAvailable: number  
 }
 
 type RentalItem = {
@@ -30,9 +33,9 @@ type Rental = {
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 const statusConfig = {
-  pending:   { label: 'Pending',   color: '#f59e0b', bg: '#fffbeb', icon: '⏳' },
-  confirmed: { label: 'Confirmed', color: '#3b82f6', bg: '#eff6ff', icon: '✅' },
-  completed: { label: 'Completed', color: '#10b981', bg: '#f0fdf4', icon: '🏁' },
+  pending:   { label: 'Pending',   color: '#f59e0b', bg: '#fffbeb'  },
+  confirmed: { label: 'Confirmed', color: '#3b82f6', bg: '#eff6ff' },
+  completed: { label: 'Completed', color: '#10b981', bg: '#f0fdf4' },
 }
 
 function formatDate(dateStr: string) {
@@ -48,9 +51,10 @@ function RentalHistory() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [expandedId, setExpandedId] = useState<string | null>(null)
+  const [rerentingId, setRerentingId] = useState<string | null>(null)
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null)
 
   useEffect(() => {
-    // Rehydrate session first (handles "rememberMe" users after page refresh)
     authService.rehydrateSession()
     const user = authService.getCurrentUser()
 
@@ -63,8 +67,6 @@ function RentalHistory() {
       setLoading(true)
       setError('')
       try {
-        // GET /api/rentals/my-rentals — uses the JWT token in the request header.
-        // The backend extracts the userId from the token via authMiddleware.
         const res = await api.get('/rentals/my-rentals')
         setRentals(res.data || [])
       } catch (err: any) {
@@ -78,8 +80,68 @@ function RentalHistory() {
     fetchMyRentals()
   }, [navigate])
 
+  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+    setToast({ message, type })
+    setTimeout(() => setToast(null), 3000)
+  }
+
   const toggleExpand = (id: string) => {
     setExpandedId(prev => (prev === id ? null : id))
+  }
+
+  // ── Re-rent handler ──────────────────────────────────────────────────────
+  const handleRerent = async (rental: Rental) => {
+    if (!rental.items || rental.items.length === 0) {
+      showToast('No items found in this rental.', 'error')
+      return
+    }
+
+    setRerentingId(rental._id)
+    try {
+      // 1. Fetch the current cart from the DB
+      const currentCart = await cartService.getCart()
+
+      // 2. Merge rental items into the cart
+      //    If the product already exists, add to its quantity.
+      //    If not, push a new entry.
+      const updatedCart = [...currentCart]
+
+      for (const item of rental.items) {
+        const product = item.productId
+        if (!product?._id) continue
+
+        const existingIndex = updatedCart.findIndex(
+          cartItem => cartItem.product._id === product._id
+        )
+
+        if (existingIndex >= 0) {
+          // Product already in cart — add quantity
+          updatedCart[existingIndex] = {
+            ...updatedCart[existingIndex],
+            quantity: updatedCart[existingIndex].quantity + item.quantity
+          }
+        } else {
+          // New product — add to cart
+          updatedCart.push({
+            product: product,
+            quantity: item.quantity
+          })
+        }
+      }
+
+      // 3. Save merged cart back to DB
+      await cartService.saveCart(updatedCart)
+
+      // 4. Success — toast then redirect to cart
+      showToast(`✅ ${rental.items.length} item(s) added to your cart!`)
+      setTimeout(() => navigate('/cart'), 1200)
+
+    } catch (err: any) {
+      console.error('Re-rent failed:', err)
+      showToast('Failed to add items to cart. Please try again.', 'error')
+    } finally {
+      setRerentingId(null)
+    }
   }
 
   // ── Render: Loading ──────────────────────────────────────────────────────
@@ -104,6 +166,16 @@ function RentalHistory() {
   // ── Render: Main ─────────────────────────────────────────────────────────
   return (
     <div style={{ minHeight: '100vh', background: '#faf7f5' }}>
+
+      {/* ── Toast notification ── */}
+      {toast && (
+        <div style={{
+          ...styles.toast,
+          background: toast.type === 'success' ? '#5c1a33' : '#ef4444'
+        }}>
+          {toast.message}
+        </div>
+      )}
 
       {/* ── Header ── */}
       <nav style={styles.nav}>
@@ -143,6 +215,7 @@ function RentalHistory() {
         {rentals.map(rental => {
           const sc = statusConfig[rental.status] || statusConfig.pending
           const isExpanded = expandedId === rental._id
+          const isRerenting = rerentingId === rental._id
 
           return (
             <div key={rental._id} style={styles.card}>
@@ -150,7 +223,6 @@ function RentalHistory() {
               {/* Card Header */}
               <div style={styles.cardHeader}>
                 <div>
-                  {/* Status badge */}
                   <span style={{ ...styles.badge, color: sc.color, background: sc.bg }}>
                     {sc.icon} {sc.label}
                   </span>
@@ -159,13 +231,30 @@ function RentalHistory() {
                   </p>
                 </div>
 
-                <div style={{ textAlign: 'right' }}>
-                  <p style={{ fontSize: '22px', fontWeight: '600', color: '#5c1a33', margin: 0 }}>
-                    ₪{(rental.totalPrice || 0).toLocaleString()}
-                  </p>
-                  <p style={{ fontSize: '12px', color: '#aaa', marginTop: '4px' }}>
-                    Ordered {formatDate(rental.createdAt)}
-                  </p>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '10px' }}>
+                  <div style={{ textAlign: 'right' }}>
+                    <p style={{ fontSize: '22px', fontWeight: '600', color: '#5c1a33', margin: 0 }}>
+                      ₪{(rental.totalPrice || 0).toLocaleString()}
+                    </p>
+                    <p style={{ fontSize: '12px', color: '#aaa', marginTop: '4px' }}>
+                      Ordered {formatDate(rental.createdAt)}
+                    </p>
+                  </div>
+
+                  {/* ── Re-rent button ── */}
+                  {rental.status === 'completed' && (
+  <button
+    onClick={() => handleRerent(rental)}
+    disabled={isRerenting}
+    style={{
+      ...styles.rerentBtn,
+      opacity: isRerenting ? 0.7 : 1,
+      cursor: isRerenting ? 'not-allowed' : 'pointer'
+    }}
+  >
+    {isRerenting ? ' Adding...' : 'Re-rent Items'}
+  </button>
+)}
                 </div>
               </div>
 
@@ -173,15 +262,14 @@ function RentalHistory() {
               <div style={styles.datesRow}>
                 <div style={styles.dateBox}>
                   <span style={styles.dateLabel}>Start Date</span>
-                  <span style={styles.dateValue}>📅 {formatDate(rental.startDate)}</span>
+                  <span style={styles.dateValue}>{formatDate(rental.startDate)}</span>
                 </div>
                 <div style={{ color: '#ccc', fontSize: '20px', alignSelf: 'center' }}>→</div>
                 <div style={styles.dateBox}>
                   <span style={styles.dateLabel}>End Date</span>
-                  <span style={styles.dateValue}>📅 {formatDate(rental.endDate)}</span>
+                  <span style={styles.dateValue}> {formatDate(rental.endDate)}</span>
                 </div>
                 <div style={{ flex: 1 }} />
-                {/* Toggle items */}
                 <button
                   onClick={() => toggleExpand(rental._id)}
                   style={styles.toggleBtn}
@@ -197,7 +285,6 @@ function RentalHistory() {
                     const product = item.productId
                     return (
                       <div key={idx} style={styles.itemRow}>
-                        {/* Product image or placeholder */}
                         {product?.imageUrl ? (
                           <img
                             src={product.imageUrl}
@@ -264,6 +351,26 @@ const styles: Record<string, React.CSSProperties> = {
     marginTop: '16px', padding: '10px 24px', background: '#5c1a33',
     color: 'white', border: 'none', borderRadius: '4px',
     cursor: 'pointer', fontSize: '14px', letterSpacing: '1px'
+  },
+  rerentBtn: {
+    padding: '8px 16px',
+    background: 'transparent',
+    color: '#5c1a33',
+    border: '1px solid #5c1a33',
+    borderRadius: '4px',
+    fontSize: '13px',
+    letterSpacing: '0.5px',
+    fontWeight: 500,
+    transition: 'all 0.2s'
+  },
+  toast: {
+    position: 'fixed', top: '24px', left: '50%',
+    transform: 'translateX(-50%)',
+    color: 'white', padding: '12px 28px',
+    borderRadius: '6px', fontSize: '14px',
+    fontWeight: 500, letterSpacing: '0.5px',
+    zIndex: 9999, boxShadow: '0 4px 16px rgba(0,0,0,0.18)',
+    whiteSpace: 'nowrap'
   },
   card: {
     background: 'white', borderRadius: '10px',

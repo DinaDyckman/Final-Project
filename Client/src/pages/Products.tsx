@@ -2,11 +2,10 @@ import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { productService } from '../services/productService'
 import { authService } from '../services/authService'
-import { cartService } from '../services/cartService'  // ✅ השירות החדש
+import { cartService } from '../services/cartService'
 import api from '../services/api'
 import { Product, CartItem } from '../types'
 
-// 🌟 הנה האובייקט שהיה חסר וגרם למסך הלבן! החזרנו אותו למקום
 const CATEGORY_GROUPS: Record<string, string[]> = {
   'Event Furniture': ['Tables', 'Chairs', 'Sofas', 'Lounge Furniture'],
   'Decor': ['Centerpieces', 'Tablecloths', 'Lighting', 'Backdrops', 'Floral Arrangements'],
@@ -21,7 +20,7 @@ interface ProductsProps {
   isAuthenticated: boolean
   onMyAccountClick: () => void
   onLogout: () => void
-  userId?: string // הוספנו תמיכה ביוזר איידי מהאבא
+  userId?: string
 }
 
 function Products({ cartOpen, setCartOpen, isAuthenticated, onMyAccountClick, onLogout, userId = 'guest' }: ProductsProps) {
@@ -33,15 +32,18 @@ function Products({ cartOpen, setCartOpen, isAuthenticated, onMyAccountClick, on
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
   const [profileOpen, setProfileOpen] = useState(false)
-  const [cartLoading, setCartLoading] = useState(true)  // ✅ ניהול טעינת עגלה
+  const [cartLoading, setCartLoading] = useState(true)
   const [userName, setUserName] = useState<string>(() => {
     const user = authService.getCurrentUser()
     return user?.name || ''
   })
 
   const [cart, setCart] = useState<CartItem[]>([])
+  const [search, setSearch] = useState('')
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
+  const [sortBy, setSortBy] = useState('default')
+  const [toast, setToast] = useState('')
 
-  // ✅ טעינת העגלה ישירות מה-Database בשרת
   useEffect(() => {
     const loadCart = async () => {
       if (userId === 'guest' || !isAuthenticated) {
@@ -57,7 +59,6 @@ function Products({ cartOpen, setCartOpen, isAuthenticated, onMyAccountClick, on
     loadCart()
   }, [userId, isAuthenticated])
 
-  // ✅ שמירת העגלה בשרת בכל שינוי עם Debounce של 500 מילישניות
   const saveTimeout = useRef<ReturnType<typeof setTimeout> | null>(null)
   useEffect(() => {
     if (userId === 'guest' || !isAuthenticated || cartLoading) return
@@ -72,12 +73,12 @@ function Products({ cartOpen, setCartOpen, isAuthenticated, onMyAccountClick, on
 
   const handleLogout = async () => {
     if (userId !== 'guest' && isAuthenticated) {
-      await cartService.saveCart(cart) // שמירה אחרונה לפני שיוצאים
+      await cartService.saveCart(cart)
     }
     authService.logout()
     onLogout()
     setProfileOpen(false)
-    window.location.reload() // רענון נקי לדף
+    window.location.reload()
   }
 
   useEffect(() => {
@@ -94,7 +95,7 @@ function Products({ cartOpen, setCartOpen, isAuthenticated, onMyAccountClick, on
       const { data } = await api.post('/rentals/checkout', {
         userId, items, startDate, endDate
       })
-      await cartService.clearCart() // ✅ ניקוי העגלה ב-DB אחרי צ'קאאוט
+      await cartService.clearCart()
       setCart([])
       setCartOpen(false)
       setCheckoutOpen(false)
@@ -116,11 +117,22 @@ function Products({ cartOpen, setCartOpen, isAuthenticated, onMyAccountClick, on
     )
   }
 
-  const filtered = selectedCategories.length === 0
-    ? products
-    : products.filter(p => selectedCategories.includes(p.category))
+  const filtered = products
+    .filter(p => selectedCategories.length === 0 || selectedCategories.includes(p.category))
+    .filter(p => p.name.toLowerCase().includes(search.toLowerCase()))
+    .sort((a, b) => {
+      if (sortBy === 'price-asc') return (a.price || 0) - (b.price || 0)
+      if (sortBy === 'price-desc') return (b.price || 0) - (a.price || 0)
+      if (sortBy === 'name-asc') return a.name.localeCompare(b.name)
+      return 0
+    })
 
   const getQty = (id: string) => quantities[id] ?? 1
+
+  const showToast = (msg: string) => {
+    setToast(msg)
+    setTimeout(() => setToast(''), 2500)
+  }
 
   const addToCart = (product: Product) => {
     const qty = getQty(product._id)
@@ -129,6 +141,7 @@ function Products({ cartOpen, setCartOpen, isAuthenticated, onMyAccountClick, on
       if (existing) return prev.map(i => i.product._id === product._id ? { ...i, quantity: i.quantity + qty } : i)
       return [...prev, { product, quantity: qty }]
     })
+    showToast(`${product.name} added to cart ✓`)
   }
 
   const removeFromCart = (id: string) => setCart(prev => prev.filter(i => i.product._id !== id))
@@ -232,7 +245,7 @@ function Products({ cartOpen, setCartOpen, isAuthenticated, onMyAccountClick, on
                     >✕</button>
                   </div>
 
-                  {/* ⚙️ כפתור ה-Admin Panel החדש מוזרק כאן ויופיע רק למנהלים */}
+                  {/* Admin Panel — admins only */}
                   {authService.getCurrentUser()?.role === 'Admin' && (
                     <button
                       onClick={() => {
@@ -253,7 +266,26 @@ function Products({ cartOpen, setCartOpen, isAuthenticated, onMyAccountClick, on
                     </button>
                   )}
 
-                  {/* כפתור ה-Logout המקורי נמצא כאן מתחתיו */}
+                  {/* My Orders — all logged-in users */}
+                  <button
+                    onClick={() => {
+                      navigate('/rental-history')
+                      setProfileOpen(false)
+                    }}
+                    style={{
+                      width: '100%', padding: '14px 20px', background: 'transparent',
+                      border: 'none', color: '#5c1a33', fontSize: '14px', letterSpacing: '1px',
+                      textAlign: 'left', cursor: 'pointer', textTransform: 'uppercase',
+                      transition: 'background 0.2s', borderBottom: '1px solid #f0f0f0',
+                      display: 'flex', alignItems: 'center', gap: '8px'
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.background = '#faf7f5'}
+                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                  >
+                    <span></span> My Orders
+                  </button>
+
+                  {/* Logout */}
                   <button
                     onClick={handleLogout}
                     style={{
@@ -320,23 +352,47 @@ function Products({ cartOpen, setCartOpen, isAuthenticated, onMyAccountClick, on
 
         {/* Main content */}
         <div style={{ flex: 1, padding: '30px' }}>
-          <div style={{ marginBottom: '30px' }}>
+          <div style={{ marginBottom: '30px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '20px' }}>
             <h1 style={{ fontWeight: 300, fontSize: '2rem', color: '#5c1a33', letterSpacing: '2px', margin: 0 }}>Available Items</h1>
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <input
+                type="text"
+                placeholder="Search products..."
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                style={{ padding: '10px 16px', border: '1px solid #e8e8e8', borderRadius: '4px', fontSize: '14px', width: '220px', outline: 'none' }}
+              />
+              <select
+                value={sortBy}
+                onChange={e => setSortBy(e.target.value)}
+                style={{ padding: '10px 14px', border: '1px solid #e8e8e8', borderRadius: '4px', fontSize: '14px', color: '#555', cursor: 'pointer', outline: 'none' }}
+              >
+                <option value="default">Sort: Default</option>
+                <option value="price-asc">Price: Low to High</option>
+                <option value="price-desc">Price: High to Low</option>
+                <option value="name-asc">Name: A to Z</option>
+              </select>
+            </div>
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '24px' }}>
             {filtered.map(product => (
-              <div key={product._id} style={{ border: '1px solid #e8e8e8', background: 'white', borderRadius: '4px', overflow: 'hidden', transition: 'box-shadow 0.3s' }}
-                onMouseEnter={e => (e.currentTarget.style.boxShadow = '0 4px 20px rgba(92,26,51,0.15)')}
-                onMouseLeave={e => (e.currentTarget.style.boxShadow = 'none')}>
-                {product.imageUrl && (
-                  <img src={product.imageUrl} alt={product.name} style={{ width: '100%', height: '160px', objectFit: 'cover' }} />
-                )}
+              <div key={product._id} style={{ border: '1px solid #e8e8e8', background: 'white', borderRadius: '4px', overflow: 'hidden', transition: 'box-shadow 0.3s, transform 0.2s', cursor: 'pointer' }}
+                onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 4px 20px rgba(92,26,51,0.15)'; e.currentTarget.style.transform = 'scale(1.03)' }}
+                onMouseLeave={e => { e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.transform = 'scale(1)' }}
+                onClick={() => setSelectedProduct(product)}>
+                <div style={{ position: 'relative' }}>
+                  {product.imageUrl && (
+                    <img src={product.imageUrl} alt={product.name} style={{ width: '100%', height: '160px', objectFit: 'cover' }} />
+                  )}
+                  {product.quantityAvailable === 0 && (
+                    <span style={{ position: 'absolute', top: '10px', left: '10px', background: '#c0392b', color: 'white', fontSize: '11px', fontWeight: '700', letterSpacing: '1px', padding: '4px 10px', borderRadius: '3px', textTransform: 'uppercase' }}>Out of Stock</span>
+                  )}
+                </div>
                 <div style={{ padding: '16px' }}>
                   <h3 style={{ fontWeight: 400, fontSize: '1rem', color: '#5c1a33', marginBottom: '6px' }}>{product.name}</h3>
                   <p style={{ fontSize: '12px', color: '#999', letterSpacing: '1px', textTransform: 'uppercase', marginBottom: '4px' }}>{product.category}</p>
                   <p style={{ fontSize: '13px', color: '#555', marginBottom: '4px' }}>Available: {product.quantityAvailable}</p>
-                  {/* 🌟 הוספת המחיר המאובטח לתצוגה בכרטיס המוצר */}
                   <p style={{ fontSize: '14px', fontWeight: '600', color: '#d4af37', marginBottom: '14px' }}>Price: ${product.price || 0}</p>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <input
@@ -346,9 +402,14 @@ function Products({ cartOpen, setCartOpen, isAuthenticated, onMyAccountClick, on
                       value={getQty(product._id)}
                       onChange={e => setQuantities(prev => ({ ...prev, [product._id]: Math.max(1, Math.min(product.quantityAvailable, Number(e.target.value))) }))}
                       style={{ width: '60px', padding: '6px', margin: 0, fontSize: '14px' }}
+                      onClick={e => e.stopPropagation()}
                     />
-                    <button onClick={() => addToCart(product)} style={{ flex: 1, padding: '8px', fontSize: '12px', letterSpacing: '1px' }}>
-                      Add to Cart
+                    <button
+                      onClick={e => { e.stopPropagation(); addToCart(product) }}
+                      disabled={product.quantityAvailable === 0}
+                      style={{ flex: 1, padding: '8px', fontSize: '12px', letterSpacing: '1px', opacity: product.quantityAvailable === 0 ? 0.4 : 1, cursor: product.quantityAvailable === 0 ? 'not-allowed' : 'pointer' }}
+                    >
+                      {product.quantityAvailable === 0 ? 'Unavailable' : 'Add to Cart'}
                     </button>
                   </div>
                 </div>
@@ -361,6 +422,41 @@ function Products({ cartOpen, setCartOpen, isAuthenticated, onMyAccountClick, on
           )}
         </div>
       </div>
+
+      {/* Product Detail Modal */}
+      {selectedProduct && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 300, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+          onClick={() => setSelectedProduct(null)}>
+          <div style={{ background: 'white', borderRadius: '8px', width: '480px', maxWidth: '90vw', overflow: 'hidden', boxShadow: '0 20px 60px rgba(0,0,0,0.3)' }}
+            onClick={e => e.stopPropagation()}>
+            {selectedProduct.imageUrl && (
+              <img src={selectedProduct.imageUrl} alt={selectedProduct.name} style={{ width: '100%', height: '260px', objectFit: 'cover' }} />
+            )}
+            <div style={{ padding: '28px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
+                <h2 style={{ fontWeight: 400, fontSize: '1.5rem', color: '#5c1a33', margin: 0 }}>{selectedProduct.name}</h2>
+                <button onClick={() => setSelectedProduct(null)} style={{ background: 'transparent', border: 'none', fontSize: '20px', cursor: 'pointer', color: '#bbb', lineHeight: 1 }}>✕</button>
+              </div>
+              <p style={{ fontSize: '12px', color: '#999', letterSpacing: '1px', textTransform: 'uppercase', marginBottom: '8px' }}>{selectedProduct.category}</p>
+              <p style={{ fontSize: '14px', color: '#555', marginBottom: '6px' }}>Available: <strong>{selectedProduct.quantityAvailable}</strong></p>
+              <p style={{ fontSize: '18px', fontWeight: '600', color: '#d4af37', marginBottom: '24px' }}>${selectedProduct.price || 0} per day</p>
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <input
+                  type="number" min={1} max={selectedProduct.quantityAvailable}
+                  value={getQty(selectedProduct._id)}
+                  onChange={e => setQuantities(prev => ({ ...prev, [selectedProduct._id]: Math.max(1, Math.min(selectedProduct.quantityAvailable, Number(e.target.value))) }))}
+                  style={{ width: '70px', padding: '10px', fontSize: '14px' }}
+                  onClick={e => e.stopPropagation()}
+                />
+                <button
+                  onClick={() => { addToCart(selectedProduct); setSelectedProduct(null) }}
+                  style={{ flex: 1, padding: '12px', background: '#5c1a33', color: 'white', border: 'none', fontSize: '14px', letterSpacing: '1px', cursor: 'pointer' }}
+                >Add to Cart</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Cart Drawer */}
       {cartOpen && (
@@ -386,11 +482,27 @@ function Products({ cartOpen, setCartOpen, isAuthenticated, onMyAccountClick, on
           </div>
           {cart.length > 0 && (
             <div style={{ padding: '20px', borderTop: '1px solid #e8e8e8' }}>
+              {startDate && endDate && endDate > startDate && (
+                <p style={{ fontSize: '13px', color: '#555', marginBottom: '10px', textAlign: 'center' }}>
+                  Estimated total: <strong style={{ color: '#5c1a33' }}>
+                    ${cart.reduce((sum, i) => sum + (i.product.price || 0) * i.quantity, 0) *
+                      Math.ceil((new Date(endDate).getTime() - new Date(startDate).getTime()) / (1000 * 60 * 60 * 24))}
+                  </strong>
+                  ({Math.ceil((new Date(endDate).getTime() - new Date(startDate).getTime()) / (1000 * 60 * 60 * 24))} days)
+                </p>
+              )}
               <button onClick={() => setCheckoutOpen(true)} style={{ width: '100%', padding: '14px', background: '#5c1a33', color: 'white', fontSize: '14px', letterSpacing: '1px' }}>
                 Proceed to Checkout
               </button>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Toast Notification */}
+      {toast && (
+        <div style={{ position: 'fixed', bottom: '30px', left: '50%', transform: 'translateX(-50%)', background: '#2d6a4f', color: 'white', padding: '12px 24px', borderRadius: '6px', fontSize: '14px', fontWeight: '500', zIndex: 999, boxShadow: '0 4px 20px rgba(0,0,0,0.2)', animation: 'fadeInUp 0.3s ease' }}>
+          {toast}
         </div>
       )}
 

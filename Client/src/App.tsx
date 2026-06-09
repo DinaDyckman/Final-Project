@@ -1,19 +1,22 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import AuthPage from './pages/AuthPage'
 import Products from './pages/Products'
 import ThankYou from './pages/ThankYou'
-import AdminPanel from './pages/AdminPanel'  // ✅ NEW
+import AdminPanel from './pages/AdminPanel'  
 import ChatBox from './components/ChatBox'
 import AiPromoModal from './components/AiPromoModal'
+import AiPromoReminder from './components/AiPromoReminder'
 import { LanguageProvider } from './context/LanguageContext'
 import { authService } from './services/authService'
+import RentalHistory from './pages/rentalHistory'
 
 authService.rehydrateSession()
 
 function App() {
   const [cartOpen, setCartOpen] = useState(false)
   const [showPromoModal, setShowPromoModal] = useState(true)
+  const [showReminder, setShowReminder] = useState(false)
   const [showAuthModal, setShowAuthModal] = useState(false)
   const [isChatForceOpen, setIsChatForceOpen] = useState(false)
   const [mountKey, setMountKey] = useState(0)
@@ -31,6 +34,11 @@ function App() {
   }
 
   const [currentUserId, setCurrentUserId] = useState(getCurrentUserId)
+
+  useEffect(() => {
+    const timer = setTimeout(() => setShowReminder(true), 10000)
+    return () => clearTimeout(timer)
+  }, [])
 
   const refreshAuthState = () => {
     const token = authService.getToken()
@@ -91,6 +99,7 @@ function App() {
               } />
               {/* ✅ NEW: Admin route */}
               <Route path="/admin" element={<AdminPanel />} />
+              <Route path="/rental-history" element={<RentalHistory />} />
               <Route path="/thank-you" element={<ThankYou />} />
               <Route path="*" element={<Navigate to="/products" replace />} />
             </Routes>
@@ -114,6 +123,7 @@ function App() {
           )}
 
           {showPromoModal && <AiPromoModal onClose={handlePromoClose} />}
+          {!showPromoModal && showReminder && <AiPromoReminder onClose={() => setShowReminder(false)} />}
           <ChatBox cartOpen={cartOpen} />
         </div>
 

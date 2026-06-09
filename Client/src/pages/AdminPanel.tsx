@@ -389,9 +389,9 @@ function AdminPanel() {
                         onChange={e => handleStatusChange(rental._id, e.target.value)}
                         style={{ padding: '6px 12px', border: `1px solid ${statusColor(rental.status)}`, borderRadius: '4px', color: statusColor(rental.status), fontSize: '13px', cursor: 'pointer' }}
                       >
-                        <option value="pending">⏳ Pending</option>
-                        <option value="confirmed">✅ Confirmed</option>
-                        <option value="completed">🏁 Completed</option>
+                        <option value="pending"> Pending</option>
+                        <option value="confirmed"> Confirmed</option>
+                        <option value="completed"> Completed</option>
                       </select>
 
                       {/* ── NEW: Mark Returned button — only shown when NOT yet completed ── */}
@@ -412,7 +412,7 @@ function AdminPanel() {
                             transition: 'background 0.2s'
                           }}
                         >
-                          {returningIds.has(rental._id) ? 'Processing...' : '↩️ Mark Returned'}
+                          {returningIds.has(rental._id) ? 'Processing...' : '↩ Mark Returned'}
                         </button>
                       )}
                     </div>

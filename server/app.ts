@@ -1,7 +1,8 @@
-import 'dotenv/config';
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 import express from 'express';
 import dotenv from 'dotenv';
-import cors from 'cors'; // ספרייה שמאפשרת ל-React לדבר עם השרת
+import cors from 'cors';
+import path from 'path'; // ספרייה שמאפשרת ל-React לדבר עם השרת
 import connectDB from './config/dbConfig';
 import aiRouter from './routers/aiRouter';
 import productRouter from './routers/productRouter';
@@ -19,8 +20,9 @@ const app = express();
 connectDB();
 
 // 4. Middlewares
-app.use(cors()); // מאפשר גישה מהדפדפן (React)
-app.use(express.json()); // מאפשר לשרת לקבל נתונים בפורמט JSON
+app.use(cors());
+app.use(express.json());
+app.use('/images', express.static(path.join(__dirname, '../../Client/public/images')));
 
 // 5. הגדרת הנתיבים (Routes)
 // כל מה שקשור ל-AI יתחיל בכתובת /api/ai

@@ -65,12 +65,12 @@ function ChatBox({ cartOpen }: { cartOpen: boolean }) {
       }
 
       const data = await response.json()
-      const aiText = data.aiResponse || "I'm not sure how to answer that."
-      
+      console.log("Server Response:", data)
+      const aiText = data.aiResponse || "As an upscale designer, I recommend focusing on elegant textures and a cohesive color palette."
       setMessages(prev => [...prev, { text: aiText, isUser: false }])
     } catch (error) {
       console.error("Chat Error:", error)
-      setMessages(prev => [...prev, { text: 'Sorry, something went wrong. Please check if the server is running.', isUser: false }])
+      setMessages(prev => [...prev, { text: 'Sorry, I am having trouble connecting. Please try again in a moment.', isUser: false }])
     } finally {
       setLoading(false)
     }
@@ -93,9 +93,9 @@ function ChatBox({ cartOpen }: { cartOpen: boolean }) {
           <div className="chat-messages">
             {messages.length === 0 && (
               <div className="message ai">
-                {savedEventType 
+                {savedEventType
                   ? `Hi! I see you are planning an ${savedEventType}. How can I help you plan your special day? ✨`
-                  : "Hi! How can I help you plan your event?"}
+                  : "Hi! I am your upscale event designer. How can I help you today?"}
               </div>
             )}
             {messages.map((msg, i) => (
