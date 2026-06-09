@@ -121,7 +121,6 @@ function App() {
           )}
 
           {showPromoModal && <AiPromoModal onClose={handlePromoClose} />}
-          {!showPromoModal && showReminder && <AiPromoReminder onClose={() => setShowReminder(false)} />}
           <ChatBox cartOpen={cartOpen} />
         </div>
 
