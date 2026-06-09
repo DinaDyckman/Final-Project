@@ -8,8 +8,6 @@ import ChatBox from './components/ChatBox'
 import AiPromoModal from './components/AiPromoModal'
 import AiPromoReminder from './components/AiPromoReminder'
 import Footer from './components/Footer'
-import { LanguageProvider } from './context/LanguageContext'
-import { authService } from './services/authService'
 import { cartService } from './services/cartService'
 import RentalHistory from './pages/rentalHistory'
 import Checkout from './pages/Checkout'
@@ -19,7 +17,7 @@ import { CartItem } from './types'
 import { LanguageProvider } from './context/LanguageContext'
 import { authService } from './services/authService'
 
-authService.rehydrateSession()
+
 
 function App() {
   const [cartOpen, setCartOpen] = useState(false)
