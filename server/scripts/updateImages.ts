@@ -4,6 +4,7 @@ dotenv.config();
 
 const PRODUCT_IMAGES: Record<string, string> = {
 <<<<<<< HEAD
+<<<<<<< HEAD
   'Round Banquet Table':       'https://images.unsplash.com/photo-1579952363873-27f3bade9f55?w=400&q=80',
   'Rectangular Folding Table': 'https://images.unsplash.com/photo-1592078615290-033ee584e267?w=400&q=80',
   'Cocktail Table':            'https://images.unsplash.com/photo-1551632436-cbf8dd35adfa?w=400&q=80',
@@ -59,6 +60,8 @@ async function updateImages() {
 
 updateImages().catch(console.error);
 =======
+=======
+>>>>>>> 9d2e6dad524bf8892dd5444ecb5d25d8feb8a750
   'White Tablecloth':               '/images/white_tablecloth.jpg',
   'Black Tablecloth':               'https://images.unsplash.com/photo-1606722590583-6951b5ea92ad?w=400&q=80',
   'Round Banquet Table':            'https://images.unsplash.com/photo-1519167758481-83f550bb49b3?w=400&q=80',
@@ -222,4 +225,7 @@ async function updateAllImages() {
 }
 
 updateAllImages().catch(console.error);
+<<<<<<< HEAD
 >>>>>>> 79e8803ca6d9db745081c0856039f2ca0faa7b8b
+=======
+>>>>>>> 9d2e6dad524bf8892dd5444ecb5d25d8feb8a750

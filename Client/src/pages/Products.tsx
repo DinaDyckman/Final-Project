@@ -131,13 +131,13 @@ function Products({ cartOpen, setCartOpen, isAuthenticated, onMyAccountClick, on
       }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', maxWidth: '1400px', margin: '0 auto', height: '70px', gap: '24px' }}>
 
-          {/* Left — logo */}
+          {/* Logo */}
           <div className="logo" style={{ flexShrink: 0 }}>
             <span className="logo-main" style={{ fontSize: '2.2rem', color: '#d4a373' }}>Upscale</span>
             <span className="logo-sub" style={{ letterSpacing: '4px', color: '#d4a373' }}>Simcha Rental</span>
           </div>
 
-          {/* Center — nav links */}
+          {/* Nav links */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '32px', flexShrink: 0 }}>
             {[
               { label: 'Products', path: '/products' },
@@ -161,7 +161,6 @@ function Products({ cartOpen, setCartOpen, isAuthenticated, onMyAccountClick, on
           {/* Right — cart + account */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '24px', flexShrink: 0 }}>
 
-            {/* Cart */}
             <button
               onClick={() => setCartOpen(true)}
               style={{ background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.85)', fontSize: '11px', letterSpacing: '2px', cursor: 'pointer', textTransform: 'uppercase', padding: 0, transition: 'color 0.2s', display: 'flex', alignItems: 'center', gap: '6px' }}
@@ -175,10 +174,8 @@ function Products({ cartOpen, setCartOpen, isAuthenticated, onMyAccountClick, on
               )}
             </button>
 
-            {/* Divider */}
             <div style={{ width: '1px', height: '20px', background: 'rgba(212,175,55,0.3)' }} />
 
-            {/* My Account Button */}
             <div style={{ position: 'relative' }}>
               <button
                 onClick={() => isAuthenticated ? setProfileOpen(p => !p) : onMyAccountClick()}
@@ -240,10 +237,10 @@ function Products({ cartOpen, setCartOpen, isAuthenticated, onMyAccountClick, on
         </div>
       </nav>
 
-      {/* Gold accent line under nav */}
+      {/* Gold accent line */}
       <div style={{ height: '1px', background: 'linear-gradient(to right, transparent, #d4af37, transparent)' }} />
 
-      {/* Main Content Area */}
+      {/* Main Content */}
       <div style={{ display: 'flex', flex: 1 }}>
 
         {/* Sidebar */}
@@ -274,10 +271,7 @@ function Products({ cartOpen, setCartOpen, isAuthenticated, onMyAccountClick, on
             </label>
           ))}
           {selectedCategories.length > 0 && (
-            <button
-              onClick={() => setSelectedCategories([])}
-              style={{ marginTop: '16px', padding: '8px 14px', fontSize: '12px', background: 'transparent', color: '#7d2e54', border: '1px solid #7d2e54', cursor: 'pointer', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
-            >
+            <button onClick={() => setSelectedCategories([])} style={{ marginTop: '16px', padding: '8px 14px', fontSize: '12px', background: 'transparent', color: '#7d2e54', border: '1px solid #7d2e54', cursor: 'pointer', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
               <X size={13} strokeWidth={1.5} />
               Clear Filters
             </button>
@@ -289,9 +283,7 @@ function Products({ cartOpen, setCartOpen, isAuthenticated, onMyAccountClick, on
           <div style={{ marginBottom: '30px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '20px' }}>
             <h1 style={{ fontWeight: 300, fontSize: '2rem', color: '#5c1a33', letterSpacing: '2px', margin: 0 }}>Available Items</h1>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-
-              {/* Search */}
-              <div style={{ display: 'flex', alignItems: 'center', border: '1px solid #e8e8e8', borderRadius: '4px', background: 'white', padding: '0 12px', gap: '8px', transition: 'border-color 0.2s, box-shadow 0.2s' }}
+              <div style={{ display: 'flex', alignItems: 'center', border: '1px solid #e8e8e8', borderRadius: '4px', background: 'white', padding: '0 12px', gap: '8px' }}
                 onFocusCapture={e => { (e.currentTarget as HTMLElement).style.borderColor = '#5c1a33'; (e.currentTarget as HTMLElement).style.boxShadow = '0 0 0 2px rgba(92,26,51,0.08)' }}
                 onBlurCapture={e => { (e.currentTarget as HTMLElement).style.borderColor = '#e8e8e8'; (e.currentTarget as HTMLElement).style.boxShadow = 'none' }}
               >
@@ -304,8 +296,6 @@ function Products({ cartOpen, setCartOpen, isAuthenticated, onMyAccountClick, on
                   style={{ width: '180px', padding: '9px 0', background: 'transparent', border: 'none', outline: 'none', color: '#333', fontSize: '13px', fontFamily: 'inherit' }}
                 />
               </div>
-
-              {/* Sort */}
               <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
                 <SlidersHorizontal size={15} strokeWidth={1.5} color="#aaa" style={{ position: 'absolute', left: '10px', pointerEvents: 'none' }} />
                 <select
@@ -331,9 +321,7 @@ function Products({ cartOpen, setCartOpen, isAuthenticated, onMyAccountClick, on
                 onClick={() => setSelectedProduct(product)}
               >
                 <div style={{ position: 'relative' }}>
-                  {product.imageUrl && (
-                    <img src={product.imageUrl} alt={product.name} style={{ width: '100%', height: '160px', objectFit: 'cover' }} />
-                  )}
+                  {product.imageUrl && <img src={product.imageUrl} alt={product.name} style={{ width: '100%', height: '160px', objectFit: 'cover' }} />}
                   {product.quantityAvailable === 0 && (
                     <span style={{ position: 'absolute', top: '10px', left: '10px', background: '#c0392b', color: 'white', fontSize: '11px', fontWeight: '700', letterSpacing: '1px', padding: '4px 10px', borderRadius: '3px', textTransform: 'uppercase' }}>Out of Stock</span>
                   )}
@@ -341,12 +329,10 @@ function Products({ cartOpen, setCartOpen, isAuthenticated, onMyAccountClick, on
                 <div style={{ padding: '16px' }}>
                   <h3 style={{ fontWeight: 400, fontSize: '1rem', color: '#5c1a33', marginBottom: '6px' }}>{product.name}</h3>
                   <p style={{ fontSize: '12px', color: '#999', letterSpacing: '1px', textTransform: 'uppercase', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <Tag size={11} strokeWidth={1.5} />
-                    {product.category}
+                    <Tag size={11} strokeWidth={1.5} />{product.category}
                   </p>
                   <p style={{ fontSize: '13px', color: '#555', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <PackageCheck size={13} strokeWidth={1.5} color="#555" />
-                    Available: {product.quantityAvailable}
+                    <PackageCheck size={13} strokeWidth={1.5} color="#555" />Available: {product.quantityAvailable}
                   </p>
                   <p style={{ fontSize: '14px', fontWeight: '600', color: '#d4af37', marginBottom: '14px' }}>₪{product.price || 0}</p>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -379,9 +365,7 @@ function Products({ cartOpen, setCartOpen, isAuthenticated, onMyAccountClick, on
           onClick={() => setSelectedProduct(null)}>
           <div style={{ background: 'white', borderRadius: '8px', width: '480px', maxWidth: '90vw', overflow: 'hidden', boxShadow: '0 20px 60px rgba(0,0,0,0.3)' }}
             onClick={e => e.stopPropagation()}>
-            {selectedProduct.imageUrl && (
-              <img src={selectedProduct.imageUrl} alt={selectedProduct.name} style={{ width: '100%', height: '260px', objectFit: 'cover' }} />
-            )}
+            {selectedProduct.imageUrl && <img src={selectedProduct.imageUrl} alt={selectedProduct.name} style={{ width: '100%', height: '260px', objectFit: 'cover' }} />}
             <div style={{ padding: '28px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
                 <h2 style={{ fontWeight: 400, fontSize: '1.5rem', color: '#5c1a33', margin: 0 }}>{selectedProduct.name}</h2>
@@ -390,12 +374,10 @@ function Products({ cartOpen, setCartOpen, isAuthenticated, onMyAccountClick, on
                 </button>
               </div>
               <p style={{ fontSize: '12px', color: '#999', letterSpacing: '1px', textTransform: 'uppercase', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <Tag size={11} strokeWidth={1.5} />
-                {selectedProduct.category}
+                <Tag size={11} strokeWidth={1.5} />{selectedProduct.category}
               </p>
               <p style={{ fontSize: '14px', color: '#555', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                <PackageCheck size={14} strokeWidth={1.5} color="#555" />
-                Available: <strong>{selectedProduct.quantityAvailable}</strong>
+                <PackageCheck size={14} strokeWidth={1.5} color="#555" />Available: <strong>{selectedProduct.quantityAvailable}</strong>
               </p>
               <p style={{ fontSize: '18px', fontWeight: '600', color: '#d4af37', marginBottom: '24px' }}>₪{selectedProduct.price || 0} per day</p>
               <div style={{ display: 'flex', gap: '10px' }}>
@@ -454,16 +436,14 @@ function Products({ cartOpen, setCartOpen, isAuthenticated, onMyAccountClick, on
               <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
                 <div style={{ flex: 1 }}>
                   <label style={{ fontSize: '10px', color: '#aaa', letterSpacing: '1px', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '4px' }}>
-                    <CalendarDays size={11} strokeWidth={1.5} />
-                    Start Date
+                    <CalendarDays size={11} strokeWidth={1.5} />Start Date
                   </label>
                   <input type="date" value={startDate} min={new Date().toISOString().split('T')[0]} onChange={e => setStartDate(e.target.value)}
                     style={{ width: '100%', padding: '8px', border: '1px solid #e8e8e8', borderRadius: '4px', fontSize: '12px' }} />
                 </div>
                 <div style={{ flex: 1 }}>
                   <label style={{ fontSize: '10px', color: '#aaa', letterSpacing: '1px', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '4px' }}>
-                    <CalendarDays size={11} strokeWidth={1.5} />
-                    End Date
+                    <CalendarDays size={11} strokeWidth={1.5} />End Date
                   </label>
                   <input type="date" value={endDate} min={startDate || new Date().toISOString().split('T')[0]} onChange={e => setEndDate(e.target.value)}
                     style={{ width: '100%', padding: '8px', border: '1px solid #e8e8e8', borderRadius: '4px', fontSize: '12px' }} />
@@ -495,7 +475,7 @@ function Products({ cartOpen, setCartOpen, isAuthenticated, onMyAccountClick, on
         </div>
       )}
 
-      {/* Toast Notification */}
+      {/* Toast */}
       {toast && (
         <div style={{ position: 'fixed', bottom: '30px', left: '50%', transform: 'translateX(-50%)', background: '#2d6a4f', color: 'white', padding: '12px 24px', borderRadius: '6px', fontSize: '14px', fontWeight: '500', zIndex: 999, boxShadow: '0 4px 20px rgba(0,0,0,0.2)', animation: 'fadeInUp 0.3s ease', display: 'flex', alignItems: 'center', gap: '8px' }}>
           <CheckCircle size={16} strokeWidth={1.5} />

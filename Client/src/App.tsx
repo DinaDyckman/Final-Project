@@ -26,7 +26,6 @@ function App() {
   const [showAuthModal, setShowAuthModal] = useState(false)
   const [isChatForceOpen, setIsChatForceOpen] = useState(false)
   const [mountKey, setMountKey] = useState(0)
-
   const [cart, setCart] = useState<CartItem[]>([])
   const [cartLoading, setCartLoading] = useState(true)
 
@@ -60,7 +59,6 @@ function App() {
   }, [currentUserId, isAuthenticated])
 
   useEffect(() => {
-
     const timer = setTimeout(() => setShowReminder(true), 10000)
     return () => clearTimeout(timer)
   }, [])
@@ -93,13 +91,8 @@ function App() {
   return (
     <LanguageProvider>
       <Router>
-        {/*
-          Outer shell: flex column so the Footer is always pushed to the
-          bottom and the main content expands to fill the remaining space.
-        */}
         <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', position: 'relative' }}>
 
-          {/* ── Blurrable content area ── */}
           <div style={{
             flex: 1,
             filter: isBlurred ? 'blur(7px)' : 'none',
@@ -151,14 +144,8 @@ function App() {
             </Routes>
           </div>
 
-          {/*
-            Footer lives OUTSIDE the blurred div so it is never blurred by
-            the modal overlay, but INSIDE the Router so useLocation() works.
-            It hides itself on /admin and /thank-you via its own hook.
-          */}
           <Footer />
 
-          {/* ── Auth modal overlay ── */}
           {showAuthModal && (
             <div
               style={{
