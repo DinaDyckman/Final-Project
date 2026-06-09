@@ -123,7 +123,7 @@ router.patch('/:id/return', authMiddleware, authorizeAdmin, async (req: Request,
     }
 
     // Restore inventory: loop through each rented item and add quantity back
-    for (const item of rental.items) {
+    for (const item of (rental.items as any[]) ) {
       await Product.findByIdAndUpdate(
         item.productId,
         { $inc: { quantityAvailable: item.quantity } },

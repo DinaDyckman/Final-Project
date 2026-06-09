@@ -20,7 +20,6 @@ const userSchema = new Schema({
         enum: ['User', 'Admin'], 
         default: 'User' 
     },
-    // 🔥 שדות חדשים עבור קוד האימות במייל
     verificationCode: {
         type: String,
         default: null

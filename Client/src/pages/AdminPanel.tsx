@@ -4,6 +4,14 @@ import { authService } from '../services/authService'
 import { productService } from '../services/productService'
 import api from '../services/api'
 import { Product } from '../types'
+import {
+  LayoutDashboard, PackageSearch, ClipboardList, ArrowLeft,
+  TrendingUp, ShoppingBag, Clock, Boxes, Trophy,
+  PlusCircle, Pencil, Trash2, Save, X, Search,
+  SlidersHorizontal, RotateCcw, CheckCircle, AlertCircle,
+  Tag, ImageIcon, Hash, BadgeDollarSign, PackageCheck, Images
+} from 'lucide-react'
+import { loadGallery, saveGallery, GalleryItem } from './InspirationGallery'
 
 type Rental = {
   _id: string
@@ -16,7 +24,7 @@ type Rental = {
   createdAt: string
 }
 
-type Tab = 'dashboard' | 'products' | 'rentals'
+type Tab = 'dashboard' | 'products' | 'rentals' | 'gallery'
 
 function AdminPanel() {
   const navigate = useNavigate()
@@ -27,10 +35,14 @@ function AdminPanel() {
   const [rentalsError, setRentalsError] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
-  // Track which rental IDs are currently being processed (for loading state on button)
   const [returningIds, setReturningIds] = useState<Set<string>>(new Set())
 
-  // Product form state
+  // Gallery state
+  const [gallery, setGallery] = useState<GalleryItem[]>(loadGallery)
+  const [galleryForm, setGalleryForm] = useState({ src: '', title: '', tag: '' })
+  const [gallerySuccess, setGallerySuccess] = useState('')
+  const [galleryError, setGalleryError] = useState('')
+
   const [editingProduct, setEditingProduct] = useState<Product | null>(null)
   const [productForm, setProductForm] = useState({
     name: '', category: '', quantityAvailable: 0, price: 0, imageUrl: ''
@@ -66,7 +78,6 @@ function AdminPanel() {
     loadData()
   }, [navigate, loadData])
 
-  // ── Dashboard stats ──────────────────────────────
   const totalRevenue = rentals.reduce((sum, r) => sum + (r.totalPrice || 0), 0)
   const totalRentals = rentals.length
   const pendingRentals = rentals.filter(r => r.status === 'pending').length
@@ -86,7 +97,6 @@ function AdminPanel() {
   })
   const topProduct = Object.values(productRentCount).sort((a, b) => b.count - a.count)[0]
 
-  // ── Product handlers ─────────────────────────────
   const handleProductSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setProductError('')
@@ -131,7 +141,6 @@ function AdminPanel() {
     }
   }
 
-  // ── Rental handlers ──────────────────────────────
   const handleStatusChange = async (rentalId: string, status: string) => {
     try {
       await api.patch(`/rentals/${rentalId}/status`, { status })
@@ -141,10 +150,6 @@ function AdminPanel() {
     }
   }
 
-  // ── NEW: Mark as Returned handler ────────────────
-  // Calls PATCH /api/rentals/:id/return which:
-  //   1. Sets rental status → 'completed'
-  //   2. Loops through items and restores each product's quantityAvailable in DB
   const handleMarkReturned = async (rentalId: string) => {
     const confirmed = window.confirm(
       'Mark this rental as returned?\n\nThis will set the status to "Completed" and restore the product inventory.'
@@ -154,10 +159,7 @@ function AdminPanel() {
     setReturningIds(prev => new Set(prev).add(rentalId))
     try {
       await api.patch(`/rentals/${rentalId}/return`)
-      // Instantly update UI — no need to refetch
-      setRentals(prev =>
-        prev.map(r => r._id === rentalId ? { ...r, status: 'completed' } : r)
-      )
+      setRentals(prev => prev.map(r => r._id === rentalId ? { ...r, status: 'completed' } : r))
       alert('✅ Rental marked as returned. Inventory has been restored.')
     } catch (err: any) {
       const msg = err?.response?.data?.message || 'Failed to mark as returned.'
@@ -171,6 +173,24 @@ function AdminPanel() {
     }
   }
 
+  const handleAddGalleryItem = () => {
+    if (!galleryForm.src.trim()) { setGalleryError('Image URL is required.'); return }
+    if (!galleryForm.title.trim()) { setGalleryError('Title is required.'); return }
+    const updated = [...gallery, { src: galleryForm.src.trim(), title: galleryForm.title.trim(), tag: galleryForm.tag.trim() || 'Decor' }]
+    setGallery(updated)
+    saveGallery(updated)
+    setGalleryForm({ src: '', title: '', tag: '' })
+    setGalleryError('')
+    setGallerySuccess('Image added to gallery!')
+    setTimeout(() => setGallerySuccess(''), 3000)
+  }
+
+  const handleDeleteGalleryItem = (i: number) => {
+    const updated = gallery.filter((_, idx) => idx !== i)
+    setGallery(updated)
+    saveGallery(updated)
+  }
+
   const filteredRentals = rentals.filter(r => {
     const matchesStatus = statusFilter === 'all' || r.status === statusFilter
     const matchesSearch =
@@ -180,8 +200,7 @@ function AdminPanel() {
     return matchesStatus && matchesSearch
   })
 
-  // ── Styles ───────────────────────────────────────
-  const tabStyle = (tab: Tab) => ({
+  const tabStyle = (tab: Tab): React.CSSProperties => ({
     padding: '12px 24px',
     background: activeTab === tab ? '#5c1a33' : 'transparent',
     color: activeTab === tab ? 'white' : '#5c1a33',
@@ -189,7 +208,10 @@ function AdminPanel() {
     cursor: 'pointer',
     fontSize: '14px',
     letterSpacing: '1px',
-    transition: 'all 0.2s'
+    transition: 'all 0.2s',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '7px'
   })
 
   const statusColor = (status: string) => ({
@@ -198,8 +220,18 @@ function AdminPanel() {
     completed: '#10b981'
   }[status] || '#999')
 
+  // Form field icon map
+  const fieldIcons: Record<string, React.ReactNode> = {
+    name: <Tag size={13} strokeWidth={1.5} color="#999" />,
+    category: <Boxes size={13} strokeWidth={1.5} color="#999" />,
+    quantityAvailable: <Hash size={13} strokeWidth={1.5} color="#999" />,
+    price: <BadgeDollarSign size={13} strokeWidth={1.5} color="#999" />,
+    imageUrl: <ImageIcon size={13} strokeWidth={1.5} color="#999" />,
+  }
+
   if (loading) return (
-    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', color: '#5c1a33', fontSize: '18px' }}>
+    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', color: '#5c1a33', fontSize: '18px', gap: '10px' }}>
+      <PackageSearch size={24} strokeWidth={1.5} color="#5c1a33" />
       Loading admin panel...
     </div>
   )
@@ -209,15 +241,17 @@ function AdminPanel() {
 
       {/* Header */}
       <nav style={{ backgroundColor: '#5c1a33', padding: '15px 30px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <LayoutDashboard size={20} strokeWidth={1.5} color="white" />
           <span style={{ color: 'white', fontSize: '20px', fontWeight: 300, letterSpacing: '2px' }}>Admin Panel</span>
-          <span style={{ color: '#d4af37', fontSize: '13px', marginLeft: '12px', letterSpacing: '1px' }}>Upscale Simcha Rental</span>
+          <span style={{ color: '#d4af37', fontSize: '13px', marginLeft: '4px', letterSpacing: '1px' }}>Upscale Simcha Rental</span>
         </div>
         <button
           onClick={() => navigate('/products')}
-          style={{ background: 'transparent', border: '1px solid rgba(212,175,55,0.6)', color: '#d4af37', padding: '8px 18px', cursor: 'pointer', fontSize: '13px', letterSpacing: '1px' }}
+          style={{ background: 'transparent', border: '1px solid rgba(212,175,55,0.6)', color: '#d4af37', padding: '8px 18px', cursor: 'pointer', fontSize: '13px', letterSpacing: '1px', display: 'flex', alignItems: 'center', gap: '7px' }}
         >
-          ← Back to Store
+          <ArrowLeft size={15} strokeWidth={1.5} />
+          Back to Store
         </button>
       </nav>
 
@@ -225,33 +259,54 @@ function AdminPanel() {
 
         {/* Tabs */}
         <div style={{ display: 'flex', gap: '0', marginBottom: '30px' }}>
-          <button style={tabStyle('dashboard')} onClick={() => setActiveTab('dashboard')}>📊 Dashboard</button>
-          <button style={tabStyle('products')} onClick={() => setActiveTab('products')}>📦 Products</button>
-          <button style={tabStyle('rentals')} onClick={() => setActiveTab('rentals')}>📋 Rentals</button>
+          <button style={tabStyle('dashboard')} onClick={() => setActiveTab('dashboard')}>
+            <LayoutDashboard size={15} strokeWidth={1.5} /> Dashboard
+          </button>
+          <button style={tabStyle('products')} onClick={() => setActiveTab('products')}>
+            <ShoppingBag size={15} strokeWidth={1.5} /> Products
+          </button>
+          <button style={tabStyle('rentals')} onClick={() => setActiveTab('rentals')}>
+            <ClipboardList size={15} strokeWidth={1.5} /> Rentals
+          </button>
+          <button style={tabStyle('gallery')} onClick={() => setActiveTab('gallery')}>
+            <Images size={15} strokeWidth={1.5} /> Gallery
+          </button>
         </div>
 
         {/* ── DASHBOARD TAB ── */}
         {activeTab === 'dashboard' && (
           <div>
-            <h2 style={{ color: '#5c1a33', fontWeight: 300, letterSpacing: '2px', marginBottom: '24px' }}>Overview</h2>
+            <h2 style={{ color: '#5c1a33', fontWeight: 300, letterSpacing: '2px', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <TrendingUp size={20} strokeWidth={1.5} color="#5c1a33" />
+              Overview
+            </h2>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '20px', marginBottom: '40px' }}>
               {[
-                { label: 'Total Rentals', value: totalRentals, color: '#5c1a33' },
-                { label: 'Total Revenue', value: `₪${totalRevenue.toLocaleString()}`, color: '#10b981' },
-                { label: 'Pending Orders', value: pendingRentals, color: '#f59e0b' },
-                { label: 'Total Products', value: products.length, color: '#3b82f6' },
+                { label: 'Total Rentals', value: totalRentals, color: '#5c1a33', icon: <ClipboardList size={18} strokeWidth={1.5} color="#5c1a33" /> },
+                { label: 'Total Revenue', value: `₪${totalRevenue.toLocaleString()}`, color: '#10b981', icon: <TrendingUp size={18} strokeWidth={1.5} color="#10b981" /> },
+                { label: 'Pending Orders', value: pendingRentals, color: '#f59e0b', icon: <Clock size={18} strokeWidth={1.5} color="#f59e0b" /> },
+                { label: 'Total Products', value: products.length, color: '#3b82f6', icon: <Boxes size={18} strokeWidth={1.5} color="#3b82f6" /> },
               ].map(stat => (
                 <div key={stat.label} style={{ background: 'white', padding: '24px', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', borderLeft: `4px solid ${stat.color}` }}>
-                  <div style={{ fontSize: '28px', fontWeight: '600', color: stat.color }}>{stat.value}</div>
-                  <div style={{ fontSize: '13px', color: '#999', letterSpacing: '1px', textTransform: 'uppercase', marginTop: '4px' }}>{stat.label}</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                    {stat.icon}
+                    <div style={{ fontSize: '28px', fontWeight: '600', color: stat.color }}>{stat.value}</div>
+                  </div>
+                  <div style={{ fontSize: '13px', color: '#999', letterSpacing: '1px', textTransform: 'uppercase' }}>{stat.label}</div>
                 </div>
               ))}
             </div>
             {topProduct && (
               <div style={{ background: 'white', padding: '24px', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', maxWidth: '400px' }}>
-                <h3 style={{ color: '#5c1a33', fontWeight: 400, marginBottom: '12px' }}>🏆 Most Rented Product</h3>
+                <h3 style={{ color: '#5c1a33', fontWeight: 400, marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Trophy size={16} strokeWidth={1.5} color="#d4af37" />
+                  Most Rented Product
+                </h3>
                 <p style={{ fontSize: '18px', fontWeight: '600', color: '#333' }}>{topProduct.name}</p>
-                <p style={{ color: '#999', fontSize: '14px' }}>Rented {topProduct.count} times</p>
+                <p style={{ color: '#999', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <PackageCheck size={13} strokeWidth={1.5} color="#999" />
+                  Rented {topProduct.count} times
+                </p>
               </div>
             )}
           </div>
@@ -261,11 +316,22 @@ function AdminPanel() {
         {activeTab === 'products' && (
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '30px' }}>
             <div style={{ background: 'white', padding: '30px', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
-              <h3 style={{ color: '#5c1a33', fontWeight: 400, letterSpacing: '1px', marginBottom: '24px' }}>
-                {editingProduct ? ' Edit Product' : '➕ Add New Product'}
+              <h3 style={{ color: '#5c1a33', fontWeight: 400, letterSpacing: '1px', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                {editingProduct
+                  ? <><Pencil size={16} strokeWidth={1.5} color="#5c1a33" /> Edit Product</>
+                  : <><PlusCircle size={16} strokeWidth={1.5} color="#5c1a33" /> Add New Product</>
+                }
               </h3>
-              {productSuccess && <p style={{ color: '#10b981', background: '#f0fdf4', padding: '10px', borderRadius: '4px', marginBottom: '16px' }}>{productSuccess}</p>}
-              {productError && <p style={{ color: '#ef4444', background: '#fef2f2', padding: '10px', borderRadius: '4px', marginBottom: '16px' }}>{productError}</p>}
+              {productSuccess && (
+                <p style={{ color: '#10b981', background: '#f0fdf4', padding: '10px', borderRadius: '4px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <CheckCircle size={14} strokeWidth={1.5} color="#10b981" /> {productSuccess}
+                </p>
+              )}
+              {productError && (
+                <p style={{ color: '#ef4444', background: '#fef2f2', padding: '10px', borderRadius: '4px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <AlertCircle size={14} strokeWidth={1.5} color="#ef4444" /> {productError}
+                </p>
+              )}
               <form onSubmit={handleProductSubmit}>
                 {[
                   { label: 'Product Name', key: 'name', type: 'text' },
@@ -275,7 +341,10 @@ function AdminPanel() {
                   { label: 'Image URL (optional)', key: 'imageUrl', type: 'text' },
                 ].map(field => (
                   <div key={field.key} style={{ marginBottom: '16px' }}>
-                    <label style={{ display: 'block', fontSize: '12px', color: '#999', letterSpacing: '1px', textTransform: 'uppercase', marginBottom: '6px' }}>{field.label}</label>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '12px', color: '#999', letterSpacing: '1px', textTransform: 'uppercase', marginBottom: '6px' }}>
+                      {fieldIcons[field.key]}
+                      {field.label}
+                    </label>
                     <input
                       type={field.type}
                       value={(productForm as any)[field.key]}
@@ -286,12 +355,16 @@ function AdminPanel() {
                   </div>
                 ))}
                 <div style={{ display: 'flex', gap: '10px' }}>
-                  <button type="submit" style={{ flex: 1, padding: '12px', background: '#5c1a33', color: 'white', border: 'none', cursor: 'pointer', fontSize: '14px', letterSpacing: '1px' }}>
+                  <button type="submit" style={{ flex: 1, padding: '12px', background: '#5c1a33', color: 'white', border: 'none', cursor: 'pointer', fontSize: '14px', letterSpacing: '1px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '7px' }}>
+                    <Save size={15} strokeWidth={1.5} />
                     {editingProduct ? 'Update Product' : 'Add Product'}
                   </button>
                   {editingProduct && (
-                    <button type="button" onClick={() => { setEditingProduct(null); setProductForm({ name: '', category: '', quantityAvailable: 0, price: 0, imageUrl: '' }) }}
-                      style={{ padding: '12px 20px', background: 'transparent', color: '#5c1a33', border: '1px solid #5c1a33', cursor: 'pointer', fontSize: '14px' }}>
+                    <button type="button"
+                      onClick={() => { setEditingProduct(null); setProductForm({ name: '', category: '', quantityAvailable: 0, price: 0, imageUrl: '' }) }}
+                      style={{ padding: '12px 20px', background: 'transparent', color: '#5c1a33', border: '1px solid #5c1a33', cursor: 'pointer', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '6px' }}
+                    >
+                      <X size={14} strokeWidth={1.5} />
                       Cancel
                     </button>
                   )}
@@ -301,7 +374,10 @@ function AdminPanel() {
 
             <div style={{ background: 'white', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', overflow: 'hidden' }}>
               <div style={{ padding: '20px 24px', borderBottom: '1px solid #f0f0f0' }}>
-                <h3 style={{ color: '#5c1a33', fontWeight: 400, letterSpacing: '1px' }}>All Products ({products.length})</h3>
+                <h3 style={{ color: '#5c1a33', fontWeight: 400, letterSpacing: '1px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Boxes size={16} strokeWidth={1.5} color="#5c1a33" />
+                  All Products ({products.length})
+                </h3>
               </div>
               <div style={{ maxHeight: '600px', overflowY: 'auto' }}>
                 {products.map(product => (
@@ -315,12 +391,12 @@ function AdminPanel() {
                     </div>
                     <div style={{ display: 'flex', gap: '8px' }}>
                       <button onClick={() => handleEditProduct(product)}
-                        style={{ padding: '6px 12px', background: 'transparent', color: '#5c1a33', border: '1px solid #5c1a33', cursor: 'pointer', fontSize: '12px' }}>
-                        Edit
+                        style={{ padding: '6px 12px', background: 'transparent', color: '#5c1a33', border: '1px solid #5c1a33', cursor: 'pointer', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                        <Pencil size={12} strokeWidth={1.5} /> Edit
                       </button>
                       <button onClick={() => handleDeleteProduct(product._id)}
-                        style={{ padding: '6px 12px', background: 'transparent', color: '#ef4444', border: '1px solid #ef4444', cursor: 'pointer', fontSize: '12px' }}>
-                        Delete
+                        style={{ padding: '6px 12px', background: 'transparent', color: '#ef4444', border: '1px solid #ef4444', cursor: 'pointer', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                        <Trash2 size={12} strokeWidth={1.5} /> Delete
                       </button>
                     </div>
                   </div>
@@ -334,34 +410,41 @@ function AdminPanel() {
         {activeTab === 'rentals' && (
           <div>
             {rentalsError && (
-              <div style={{ background: '#fef2f2', color: '#ef4444', padding: '12px 16px', borderRadius: '6px', marginBottom: '16px', fontSize: '14px' }}>
-                ⚠️ {rentalsError}
+              <div style={{ background: '#fef2f2', color: '#ef4444', padding: '12px 16px', borderRadius: '6px', marginBottom: '16px', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <AlertCircle size={15} strokeWidth={1.5} color="#ef4444" /> {rentalsError}
               </div>
             )}
 
             <div style={{ display: 'flex', gap: '16px', marginBottom: '24px' }}>
-              <input
-                type="text"
-                placeholder="Search by user ID, order ID or product name..."
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-                style={{ flex: 1, padding: '10px 16px', border: '1px solid #e8e8e8', borderRadius: '4px', fontSize: '14px' }}
-              />
-              <select
-                value={statusFilter}
-                onChange={e => setStatusFilter(e.target.value)}
-                style={{ padding: '10px 16px', border: '1px solid #e8e8e8', borderRadius: '4px', fontSize: '14px', color: '#333' }}
-              >
-                <option value="all">All Statuses</option>
-                <option value="pending">Pending</option>
-                <option value="confirmed">Confirmed</option>
-                <option value="completed">Completed</option>
-              </select>
+              <div style={{ flex: 1, position: 'relative', display: 'flex', alignItems: 'center' }}>
+                <Search size={15} strokeWidth={1.5} color="#aaa" style={{ position: 'absolute', left: '12px', pointerEvents: 'none' }} />
+                <input
+                  type="text"
+                  placeholder="Search by user ID, order ID or product name..."
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                  style={{ width: '100%', padding: '10px 16px 10px 36px', border: '1px solid #e8e8e8', borderRadius: '4px', fontSize: '14px' }}
+                />
+              </div>
+              <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                <SlidersHorizontal size={15} strokeWidth={1.5} color="#aaa" style={{ position: 'absolute', left: '12px', pointerEvents: 'none' }} />
+                <select
+                  value={statusFilter}
+                  onChange={e => setStatusFilter(e.target.value)}
+                  style={{ padding: '10px 16px 10px 36px', border: '1px solid #e8e8e8', borderRadius: '4px', fontSize: '14px', color: '#333', appearance: 'none', cursor: 'pointer' }}
+                >
+                  <option value="all">All Statuses</option>
+                  <option value="pending">Pending</option>
+                  <option value="confirmed">Confirmed</option>
+                  <option value="completed">Completed</option>
+                </select>
+              </div>
             </div>
 
             <div style={{ background: 'white', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', overflow: 'hidden' }}>
               <div style={{ padding: '20px 24px', borderBottom: '1px solid #f0f0f0' }}>
-                <h3 style={{ color: '#5c1a33', fontWeight: 400, letterSpacing: '1px' }}>
+                <h3 style={{ color: '#5c1a33', fontWeight: 400, letterSpacing: '1px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <ClipboardList size={16} strokeWidth={1.5} color="#5c1a33" />
                   All Rentals ({filteredRentals.length})
                 </h3>
               </div>
@@ -378,7 +461,6 @@ function AdminPanel() {
                       </p>
                     </div>
 
-                    {/* ── RIGHT SIDE: price + status dropdown + Mark Returned button ── */}
                     <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px' }}>
                       <p style={{ fontSize: '18px', fontWeight: '600', color: '#5c1a33', margin: 0 }}>
                         ₪{(rental.totalPrice || 0).toLocaleString()}
@@ -389,12 +471,11 @@ function AdminPanel() {
                         onChange={e => handleStatusChange(rental._id, e.target.value)}
                         style={{ padding: '6px 12px', border: `1px solid ${statusColor(rental.status)}`, borderRadius: '4px', color: statusColor(rental.status), fontSize: '13px', cursor: 'pointer' }}
                       >
-                        <option value="pending"> Pending</option>
-                        <option value="confirmed"> Confirmed</option>
-                        <option value="completed"> Completed</option>
+                        <option value="pending">Pending</option>
+                        <option value="confirmed">Confirmed</option>
+                        <option value="completed">Completed</option>
                       </select>
 
-                      {/* ── NEW: Mark Returned button — only shown when NOT yet completed ── */}
                       {rental.status !== 'completed' && (
                         <button
                           onClick={() => handleMarkReturned(rental._id)}
@@ -409,18 +490,29 @@ function AdminPanel() {
                             fontSize: '12px',
                             letterSpacing: '0.5px',
                             fontWeight: 500,
-                            transition: 'background 0.2s'
+                            transition: 'background 0.2s',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px'
                           }}
                         >
-                          {returningIds.has(rental._id) ? 'Processing...' : '↩ Mark Returned'}
+                          <RotateCcw size={12} strokeWidth={1.5} />
+                          {returningIds.has(rental._id) ? 'Processing...' : 'Mark Returned'}
                         </button>
+                      )}
+
+                      {rental.status === 'completed' && (
+                        <span style={{ fontSize: '12px', color: '#10b981', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <CheckCircle size={12} strokeWidth={1.5} color="#10b981" /> Returned
+                        </span>
                       )}
                     </div>
                   </div>
 
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                     {rental.items && Array.isArray(rental.items) && rental.items.map((item, i) => (
-                      <span key={i} style={{ background: '#faf7f5', border: '1px solid #e8e8e8', padding: '4px 10px', borderRadius: '20px', fontSize: '12px', color: '#666' }}>
+                      <span key={i} style={{ background: '#faf7f5', border: '1px solid #e8e8e8', padding: '4px 10px', borderRadius: '20px', fontSize: '12px', color: '#666', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <ShoppingBag size={11} strokeWidth={1.5} color="#999" />
                         {item.productId?.name || 'Unknown Product'} × {item.quantity || 0}
                       </span>
                     ))}
@@ -430,6 +522,81 @@ function AdminPanel() {
             </div>
           </div>
         )}
+
+        {/* ── GALLERY TAB ── */}
+        {activeTab === 'gallery' && (
+          <div style={{ display: 'grid', gridTemplateColumns: '360px 1fr', gap: '30px' }}>
+
+            {/* Add Image Form */}
+            <div style={{ background: 'white', padding: '30px', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', display: 'flex', flexDirection: 'column', gap: '18px' }}>
+              <h3 style={{ color: '#5c1a33', fontWeight: 400, letterSpacing: '1px', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <PlusCircle size={16} strokeWidth={1.5} color="#5c1a33" /> Add to Gallery
+              </h3>
+              {gallerySuccess && (
+                <p style={{ color: '#10b981', background: '#f0fdf4', padding: '10px', borderRadius: '4px', margin: 0, display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px' }}>
+                  <CheckCircle size={14} strokeWidth={1.5} color="#10b981" /> {gallerySuccess}
+                </p>
+              )}
+              {galleryError && (
+                <p style={{ color: '#ef4444', background: '#fef2f2', padding: '10px', borderRadius: '4px', margin: 0, display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px' }}>
+                  <AlertCircle size={14} strokeWidth={1.5} color="#ef4444" /> {galleryError}
+                </p>
+              )}
+              {[
+                { label: 'Image URL', key: 'src', placeholder: 'https://... or /images/photo.jpg' },
+                { label: 'Title', key: 'title', placeholder: 'e.g. Elegant Gold Setting' },
+                { label: 'Tag / Category', key: 'tag', placeholder: 'e.g. Centerpieces, Tablecloths' },
+              ].map(f => (
+                <div key={f.key}>
+                  <label style={{ display: 'block', fontSize: '11px', color: '#999', letterSpacing: '1px', textTransform: 'uppercase', marginBottom: '6px' }}>{f.label}</label>
+                  <input
+                    type="text"
+                    placeholder={f.placeholder}
+                    value={(galleryForm as any)[f.key]}
+                    onChange={e => setGalleryForm(prev => ({ ...prev, [f.key]: e.target.value }))}
+                    style={{ width: '100%', padding: '10px', border: '1px solid #e8e8e8', borderRadius: '4px', fontSize: '14px', outline: 'none' }}
+                  />
+                </div>
+              ))}
+              {galleryForm.src && (
+                <img src={galleryForm.src} alt="preview" style={{ width: '100%', height: '160px', objectFit: 'cover', borderRadius: '4px', border: '1px solid #e8e8e8' }} onError={e => (e.currentTarget.style.display = 'none')} />
+              )}
+              <button
+                onClick={handleAddGalleryItem}
+                style={{ padding: '12px', background: '#5c1a33', color: 'white', border: 'none', cursor: 'pointer', fontSize: '14px', letterSpacing: '1px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '7px', borderRadius: '4px' }}
+              >
+                <Save size={15} strokeWidth={1.5} /> Add to Gallery
+              </button>
+            </div>
+
+            {/* Gallery Grid Preview */}
+            <div style={{ background: 'white', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', overflow: 'hidden' }}>
+              <div style={{ padding: '20px 24px', borderBottom: '1px solid #f0f0f0' }}>
+                <h3 style={{ color: '#5c1a33', fontWeight: 400, letterSpacing: '1px', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Images size={16} strokeWidth={1.5} color="#5c1a33" /> Gallery Images ({gallery.length})
+                </h3>
+              </div>
+              <div style={{ padding: '20px 24px', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '12px', maxHeight: '600px', overflowY: 'auto' }}>
+                {gallery.map((item, i) => (
+                  <div key={i} style={{ position: 'relative', borderRadius: '4px', overflow: 'hidden', border: '1px solid #e8e8e8' }}>
+                    <img src={item.src} alt={item.title} style={{ width: '100%', height: '110px', objectFit: 'cover', display: 'block' }} />
+                    <div style={{ padding: '8px' }}>
+                      <p style={{ fontSize: '11px', fontWeight: 500, color: '#333', margin: '0 0 2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.title}</p>
+                      <p style={{ fontSize: '10px', color: '#999', margin: 0 }}>{item.tag}</p>
+                    </div>
+                    <button
+                      onClick={() => handleDeleteGalleryItem(i)}
+                      style={{ position: 'absolute', top: '6px', right: '6px', background: 'rgba(239,68,68,0.9)', border: 'none', borderRadius: '3px', padding: '4px', cursor: 'pointer', display: 'flex' }}
+                    >
+                      <Trash2 size={12} strokeWidth={1.5} color="white" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
       </div>
     </div>
   )

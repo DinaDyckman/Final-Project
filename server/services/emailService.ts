@@ -78,7 +78,32 @@ export const sendRentalSummaryEmail = async (toEmail: string, rentalDetails: any
 };
 
 /**
- * 3. שליחת תזכורת לפני מועד החזרה (Due Date Reminder)
+ * 3. Contact Us form submission
+ */
+export const sendContactEmail = async ({ name, email, phone, message }: { name: string; email: string; phone?: string; message: string }) => {
+    const mailOptions = {
+        from: `"Upscale Simcha Rental" <${process.env.EMAIL_USER}>`,
+        to: process.env.EMAIL_USER,
+        replyTo: email,
+        subject: `New Contact Form Message from ${name}`,
+        html: `
+            <div style="font-family: Arial, sans-serif; padding: 24px; border: 1px solid #7d2e54; border-radius: 8px; max-width: 500px; margin: 0 auto;">
+                <h2 style="color: #5c1a33;">New Contact Form Submission</h2>
+                <p><strong>Name:</strong> ${name}</p>
+                <p><strong>Email:</strong> ${email}</p>
+                ${phone ? `<p><strong>Phone:</strong> ${phone}</p>` : ''}
+                <hr style="border: none; border-top: 1px solid #e8e8e8; margin: 16px 0;" />
+                <p><strong>Message:</strong></p>
+                <p style="background: #faf7f5; padding: 12px; border-radius: 4px;">${message}</p>
+            </div>
+        `
+    }
+    await transporter.sendMail(mailOptions)
+    console.log(`Contact form email sent from ${email}`)
+}
+
+/**
+ * 4. Due Date Reminder
  */
 export const sendDueReminderEmail = async (toEmail: string, userName: string, itemName: string, dueDate: string) => {
     const mailOptions = {
