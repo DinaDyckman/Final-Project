@@ -16,6 +16,8 @@ import Checkout from './pages/Checkout'
 import InspirationGallery from './pages/InspirationGallery'
 import ContactUs from './pages/ContactUs'
 import { CartItem } from './types'
+import { LanguageProvider } from './context/LanguageContext'
+import { authService } from './services/authService'
 
 authService.rehydrateSession()
 
@@ -137,6 +139,7 @@ function App() {
               } />
               <Route path="/contact" element={<ContactUs />} />
               <Route path="/inspiration-gallery" element={<InspirationGallery />} />
+              {/* ✅ NEW: Admin route */}
               <Route path="/admin" element={<AdminPanel />} />
               <Route path="/rental-history" element={<RentalHistory />} />
               <Route path="/thank-you" element={<ThankYou />} />

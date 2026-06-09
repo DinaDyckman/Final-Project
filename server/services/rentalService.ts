@@ -61,7 +61,7 @@ export const markAsReturned = async (rentalId: string) => {
   if (rental.status === 'completed') throw new Error('Rental already marked as returned');
 
   // Restore quantity for each product
-  for (const item of rental.items) {
+  for (const item of (rental.items as any[])) {
     const product = await Product.findById(item.productId);
     if (product) {
       product.quantityAvailable += item.quantity;
@@ -80,8 +80,7 @@ export const cancelRental = async (rentalId: string, userId: string) => {
   if (rental.userId !== userId) throw new Error('Unauthorized');
   if (rental.status !== 'pending') throw new Error('Only pending orders can be cancelled');
 
-  // Restore quantity for each product
-  for (const item of rental.items) {
+  for (const item of (rental.items as any[])) {
     const product = await Product.findById(item.productId);
     if (product) {
       product.quantityAvailable += item.quantity;
