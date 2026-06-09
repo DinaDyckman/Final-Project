@@ -29,8 +29,8 @@ function AuthPage({ onAuthSuccess, onClose }: { onAuthSuccess?: () => void, onCl
     setError('')
     setSuccess('')
     try {
-      const response = await authService.login(email, password, rememberMe)
-      if (response.data?.token) {
+   const loginResponse = await authService.login(email, password, rememberMe)
+        if (loginResponse.data?.token) {
         setSuccess('התחברת בהצלחה! מעביר אותך לאתר...')
         setTimeout(() => {
           onAuthSuccess?.()
@@ -52,7 +52,7 @@ function AuthPage({ onAuthSuccess, onClose }: { onAuthSuccess?: () => void, onCl
     console.log('🔐 Registration Verify Code - Email:', email)
     
     try {
-      const response = await authService.verifyCode(email, verificationCode, rememberMe)
+     await authService.register(name, email, password, role, role === 'Admin' ? adminCode : undefined)
       setSuccess('החשבון אומת בהצלחה! מעביר אותך לאתר...')
       setTimeout(() => {
         onAuthSuccess?.()
