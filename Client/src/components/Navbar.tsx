@@ -13,6 +13,7 @@ function Navbar() {
         </Link>
         <div className="nav-links">
           <Link to="/products">{t('products')}</Link>
+          <Link to="/inspiration-gallery">{t('inspirationGallery')}</Link>
           <Link to="/login">{t('signIn')}</Link>
           <button onClick={toggleLanguage} className="lang-btn">
             {language === 'en' ? 'עב' : 'EN'}

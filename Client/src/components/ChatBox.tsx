@@ -1,4 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
+
+// @ts-ignore
 import '../styles/ChatBox.css'
 
 interface Message {
@@ -13,6 +15,9 @@ function ChatBox({ cartOpen }: { cartOpen: boolean }) {
   const [loading, setLoading] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
+  // נשלוף את סוג האירוע שנשמר בבלוק ה-Continue, כדי להתאים את הודעת הפתיחה
+  const savedEventType = sessionStorage.getItem('eventType')
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
@@ -21,40 +26,51 @@ function ChatBox({ cartOpen }: { cartOpen: boolean }) {
     scrollToBottom()
   }, [messages])
 
+
+  useEffect(() => {
+    const handleOpenChat = () => {
+      setIsOpen(true)
+    }
+
+    window.addEventListener('openSimchaChat', handleOpenChat)
+    
+    return () => {
+      window.removeEventListener('openSimchaChat', handleOpenChat)
+    }
+  }, [])
+
   const sendMessage = async () => {
     if (!input.trim()) return
 
     const userMessage = { text: input, isUser: true }
     setMessages(prev => [...prev, userMessage])
-    const currentInput = input; // שומרים את הערך לפני שמנקים את ה-input
+    const currentInput = input
     setInput('')
-    setLoading(true)
+    loading || setLoading(true)
 
     try {
-      // תיקון כתובת ה-URL לכתובת המלאה של השרת שלך
       const response = await fetch('http://localhost:5000/api/ai/consult', {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json' 
         },
         body: JSON.stringify({ 
-          userId: "user_123", // השרת מצפה ל-userId כדי לשמור ב-DB
-          userQuery: currentInput // שינוי מ-query ל-userQuery כדי שיתאים לשרת
+          userId: "user_123", 
+          userQuery: currentInput 
         })
       })
 
       if (!response.ok) {
-        throw new Error('Network response was not ok');
+        throw new Error('Network response was not ok')
       }
 
       const data = await response.json()
-      
-      const aiText = data.aiResponse || "I'm not sure how to answer that.";
-      
+      console.log("Server Response:", data)
+      const aiText = data.aiResponse || "As an upscale designer, I recommend focusing on elegant textures and a cohesive color palette."
       setMessages(prev => [...prev, { text: aiText, isUser: false }])
     } catch (error) {
-      console.error("Chat Error:", error);
-      setMessages(prev => [...prev, { text: 'Sorry, something went wrong. Please check if the server is running.', isUser: false }])
+      console.error("Chat Error:", error)
+      setMessages(prev => [...prev, { text: 'Sorry, I am having trouble connecting. Please try again in a moment.', isUser: false }])
     } finally {
       setLoading(false)
     }
@@ -64,19 +80,23 @@ function ChatBox({ cartOpen }: { cartOpen: boolean }) {
     <>
       {!isOpen && !cartOpen && (
         <button className="help-button" onClick={() => setIsOpen(true)}>
-          💬 Need Help?
+          Need Help?
         </button>
       )}
 
       {isOpen && (
         <div className="chat-container">
           <div className="chat-header">
-            <h3>AI Assistant</h3>
+            <h3>Simcha Bot</h3>
             <button onClick={() => setIsOpen(false)}>✕</button>
           </div>
           <div className="chat-messages">
             {messages.length === 0 && (
-              <div className="message ai">Hi! How can I help you plan your event?</div>
+              <div className="message ai">
+                {savedEventType
+                  ? `Hi! I see you are planning an ${savedEventType}. How can I help you plan your special day? ✨`
+                  : "Hi! I am your upscale event designer. How can I help you today?"}
+              </div>
             )}
             {messages.map((msg, i) => (
               <div key={i} className={`message ${msg.isUser ? 'user' : 'ai'}`}>

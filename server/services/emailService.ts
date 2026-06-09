@@ -16,7 +16,7 @@ export const sendVerificationEmail = async (toEmail: string, code: string) => {
     const mailOptions = {
         from: `"מערכת האימות שלנו" <${process.env.EMAIL_USER}>`,
         to: toEmail,
-        subject: 'קוד האימות שלך להתחברות לאתר 🔐',
+        subject: 'קוד האימות שלך להתחברות לאתר',
         html: `
             <div style="font-family: Arial, sans-serif; text-align: right; direction: rtl; padding: 20px; border: 1px solid #7d2e54; border-radius: 8px; max-width: 500px; margin: 0 auto;">
                 <h2 style="color: #7d2e54; text-align: center;">שלום רב,</h2>
@@ -36,7 +36,7 @@ export const sendVerificationEmail = async (toEmail: string, code: string) => {
 
     try {
         await transporter.sendMail(mailOptions);
-        console.log(`📧 Verification email sent successfully to ${toEmail}`);
+        console.log(` Verification email sent successfully to ${toEmail}`);
     } catch (error) {
         console.error('❌ Error sending verification email:', error);
         // גיבוי לפיתוח: אם המייל לא מוגדר עדיין ב-.env, נדפיס את הקוד בטרמינל כדי שתוכלי לבדוק את האתר
@@ -51,40 +51,65 @@ export const sendRentalSummaryEmail = async (toEmail: string, rentalDetails: any
     const mailOptions = {
         from: `"מערכת ההשכרות שלנו" <${process.env.EMAIL_USER}>`,
         to: toEmail,
-        subject: `אישור הזמנה וסיכום השכרה מס' ${rentalDetails.id || ''} 🛍️`,
+        subject: `אישור הזמנה וסיכום השכרה מס' ${rentalDetails.id || ''}`,
         html: `
             <div style="font-family: Arial, sans-serif; text-align: right; direction: rtl; padding: 20px; border: 1px solid #7d2e54; border-radius: 8px; max-width: 500px; margin: 0 auto;">
-                <h2 style="color: #7d2e54; text-align: center;">תודה על הזמנתך! 🎉</h2>
+                <h2 style="color: #7d2e54; text-align: center;">תודה על הזמנתך! </h2>
                 <p>ההזמנה שלך נקלטה בהצלחה במערכת. הנה סיכום פרטי ההשכרה:</p>
                 <div style="background-color: #f9f9f9; padding: 15px; border-radius: 6px; margin: 15px 0;">
-                    <p><strong>📦 פריט:</strong> ${rentalDetails.itemName || 'שם הפריט'}</p>
-                    <p><strong>📅 תאריך התחלה:</strong> ${rentalDetails.startDate || 'תאריך התחלה'}</p>
-                    <p><strong>📅 תאריך החזרה:</strong> ${rentalDetails.endDate || 'תאריך סיום'}</p>
-                    <p><strong>💰 סה"כ לתשלום:</strong> ₪${rentalDetails.totalPrice || '0'}</p>
+                    <p><strong> פריט:</strong> ${rentalDetails.itemName || 'שם הפריט'}</p>
+                    <p><strong> תאריך התחלה:</strong> ${rentalDetails.startDate || 'תאריך התחלה'}</p>
+                    <p><strong> תאריך החזרה:</strong> ${rentalDetails.endDate || 'תאריך סיום'}</p>
+                    <p><strong> סה"כ לתשלום:</strong> ₪${rentalDetails.totalPrice || '0'}</p>
                 </div>
                 <p>נא לשמור על הפריט ולהחזירו במועד הנקוב.</p>
                 <hr style="border: none; border-top: 1px solid #ccc; margin-top: 20px;" />
-                <p style="font-size: 12px; color: #666; text-align: center;">צוות הפרויקט של דינה ומירי ✨</p>
+                <p style="font-size: 12px; color: #666; text-align: center;">צוות השכרת upscale</p>
             </div>
         `
     };
 
     try {
         await transporter.sendMail(mailOptions);
-        console.log(`📧 Rental summary email sent successfully to ${toEmail}`);
+        console.log(` Rental summary email sent successfully to ${toEmail}`);
     } catch (error) {
         console.error('❌ Error sending rental summary email:', error);
     }
 };
 
 /**
- * 3. שליחת תזכורת לפני מועד החזרה (Due Date Reminder)
+ * 3. Contact Us form submission
+ */
+export const sendContactEmail = async ({ name, email, phone, message }: { name: string; email: string; phone?: string; message: string }) => {
+    const mailOptions = {
+        from: `"Upscale Simcha Rental" <${process.env.EMAIL_USER}>`,
+        to: process.env.EMAIL_USER,
+        replyTo: email,
+        subject: `New Contact Form Message from ${name}`,
+        html: `
+            <div style="font-family: Arial, sans-serif; padding: 24px; border: 1px solid #7d2e54; border-radius: 8px; max-width: 500px; margin: 0 auto;">
+                <h2 style="color: #5c1a33;">New Contact Form Submission</h2>
+                <p><strong>Name:</strong> ${name}</p>
+                <p><strong>Email:</strong> ${email}</p>
+                ${phone ? `<p><strong>Phone:</strong> ${phone}</p>` : ''}
+                <hr style="border: none; border-top: 1px solid #e8e8e8; margin: 16px 0;" />
+                <p><strong>Message:</strong></p>
+                <p style="background: #faf7f5; padding: 12px; border-radius: 4px;">${message}</p>
+            </div>
+        `
+    }
+    await transporter.sendMail(mailOptions)
+    console.log(`Contact form email sent from ${email}`)
+}
+
+/**
+ * 4. Due Date Reminder
  */
 export const sendDueReminderEmail = async (toEmail: string, userName: string, itemName: string, dueDate: string) => {
     const mailOptions = {
         from: `"מערכת ההשכרות שלנו" <${process.env.EMAIL_USER}>`,
         to: toEmail,
-        subject: `תזכורת: מועד החזרת פריט קרוב ⏰`,
+        subject: `תזכורת: מועד החזרת פריט קרוב `,
         html: `
             <div style="font-family: Arial, sans-serif; text-align: right; direction: rtl; padding: 20px; border: 1px solid #b23b3b; border-radius: 8px; max-width: 500px; margin: 0 auto;">
                 <h2 style="color: #b23b3b; text-align: center;">שלום ${userName},</h2>
@@ -103,8 +128,8 @@ export const sendDueReminderEmail = async (toEmail: string, userName: string, it
 
     try {
         await transporter.sendMail(mailOptions);
-        console.log(`📧 Due reminder email sent successfully to ${toEmail}`);
+        console.log(` Due reminder email sent successfully to ${toEmail}`);
     } catch (error) {
-        console.error('❌ Error sending reminder email:', error);
+        console.error(' Error sending reminder email:', error);
     }
 };

@@ -1,12 +1,14 @@
-import 'dotenv/config';
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 import express from 'express';
 import dotenv from 'dotenv';
-import cors from 'cors'; // ספרייה שמאפשרת ל-React לדבר עם השרת
+import cors from 'cors';
+import path from 'path'; // ספרייה שמאפשרת ל-React לדבר עם השרת
 import connectDB from './config/dbConfig';
 import aiRouter from './routers/aiRouter';
 import productRouter from './routers/productRouter';
 import rentalRouter from './routers/rentalRouter';
 import userRouter from './routers/userRouter';
+import cartRouter from './routers/cartRouter';
 
 // 1. טעינת משתני הסביבה (חייב להיות בהתחלה!)
 dotenv.config();
@@ -18,8 +20,9 @@ const app = express();
 connectDB();
 
 // 4. Middlewares
-app.use(cors()); // מאפשר גישה מהדפדפן (React)
-app.use(express.json()); // מאפשר לשרת לקבל נתונים בפורמט JSON
+app.use(cors());
+app.use(express.json());
+app.use('/images', express.static(path.join(__dirname, '../../Client/public/images')));
 
 // 5. הגדרת הנתיבים (Routes)
 // כל מה שקשור ל-AI יתחיל בכתובת /api/ai
@@ -27,7 +30,7 @@ app.use('/api/ai', aiRouter);
 app.use('/api/products', productRouter);
 app.use('/api/rentals', rentalRouter);
 app.use('/api/users', userRouter);
-
+app.use('/api/cart', cartRouter);
 
 // 6. בדיקת בריאות לשרת (אופציונלי - כדי לראות שהכל עובד)
 app.get('/', (req, res) => {
